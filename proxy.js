@@ -4,10 +4,12 @@ import { createClient } from "@/lib/supabase/middleware";
 const PUBLIC_PATHS = ["/login", "/signup", "/auth/callback"];
 
 function isPublicPath(pathname) {
-  return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+  return PUBLIC_PATHS.some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`)
+  );
 }
 
-export async function middleware(request) {
+export async function proxy(request) {
   const response = NextResponse.next({ request });
   const { pathname } = request.nextUrl;
 
