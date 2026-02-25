@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useCallback, useEffect } from "react";
+import { useBreakpoint } from "@/hooks/use-breakpoint";
 import {
   createClientAction,
   updateClientAction,
@@ -31,6 +32,8 @@ function formatDate(isoString) {
 
 export function ClientsView({ initialClients, fetchError }) {
   const router = useRouter();
+  const breakpoint = useBreakpoint();
+  const isMobile = breakpoint === "mobile";
   const clients = initialClients;
   const [formOpen, setFormOpen] = useState(null);
   const [formData, setFormData] = useState(EMPTY_FORM);
@@ -195,21 +198,24 @@ export function ClientsView({ initialClients, fetchError }) {
     setDeleteError(null);
   }, []);
 
+  const inputClass =
+    "w-full rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 placeholder-zinc-400 transition-all duration-200 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-emerald-400 dark:focus:ring-emerald-500/30";
+
   return (
-    <div className="space-y-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-6 tablet:space-y-8">
+      <header className="flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 tablet:text-3xl">
             Clients
           </h1>
-          <p className="mt-1 text-zinc-600 dark:text-zinc-400">
+          <p className="mt-1.5 text-sm text-zinc-600 dark:text-zinc-400 tablet:text-base">
             View and manage clients. Add or edit clients and assign services.
           </p>
         </div>
         <button
           type="button"
           onClick={openCreate}
-          className="inline-flex h-10 items-center justify-center rounded-lg bg-zinc-900 px-4 text-sm font-medium text-white transition-colors hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:focus:ring-offset-zinc-900"
+          className="inline-flex h-11 min-w-[10rem] items-center justify-center rounded-xl bg-emerald-600 px-5 text-sm font-medium text-white transition-all duration-200 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:focus:ring-offset-zinc-900"
           aria-label="Add client"
         >
           Add client
@@ -219,54 +225,98 @@ export function ClientsView({ initialClients, fetchError }) {
       {fetchError && (
         <div
           role="alert"
-          className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300"
+          className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300"
         >
           {fetchError}
         </div>
       )}
 
-      <div className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
-          <h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+      <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="border-b border-zinc-200/80 bg-zinc-50/50 px-4 py-3.5 dark:border-zinc-800 dark:bg-zinc-800/30 tablet:px-6">
+          <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
             Client list
           </h2>
         </div>
 
         {clients.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-4 px-4 py-16 text-center">
+          <div className="flex flex-col items-center justify-center gap-5 px-4 py-20 text-center">
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
               No clients yet. Add your first client to get started.
             </p>
             <button
               type="button"
               onClick={openCreate}
-              className="text-sm font-medium text-zinc-900 underline-offset-2 hover:underline dark:text-zinc-50"
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-5 text-sm font-medium text-white transition-all hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600"
               aria-label="Add client"
             >
               Add client
             </button>
           </div>
+        ) : isMobile ? (
+          <ul className="divide-y divide-zinc-200/80 dark:divide-zinc-800" role="list">
+            {clients.map((client) => (
+              <li
+                key={client.id}
+                className="flex flex-col gap-2 px-4 py-4 first:pt-4 last:pb-4 tablet:px-6"
+              >
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-semibold text-zinc-900 dark:text-zinc-50">
+                    {client.name} {client.last_name}
+                  </span>
+                  <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                    {client.phone_number || "—"}
+                  </span>
+                  {client.reference && (
+                    <span className="text-xs text-zinc-500 dark:text-zinc-500">
+                      Ref: {client.reference}
+                    </span>
+                  )}
+                  <span className="text-xs text-zinc-500 dark:text-zinc-500">
+                    {formatDate(client.created_at)}
+                  </span>
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => openEdit(client)}
+                    className="text-sm font-medium text-emerald-600 underline-offset-2 hover:underline dark:text-emerald-400"
+                    aria-label={`Edit ${client.name} ${client.last_name}`}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteClick(client)}
+                    className="text-sm font-medium text-red-600 underline-offset-2 hover:underline dark:text-red-400"
+                    aria-label={`Delete ${client.name} ${client.last_name}`}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm" role="grid">
               <thead>
-                <tr className="border-b border-zinc-200 dark:border-zinc-800">
-                  <th className="px-4 py-3 font-medium text-zinc-700 dark:text-zinc-300">
+                <tr className="border-b border-zinc-200/80 dark:border-zinc-800">
+                  <th className="px-4 py-3.5 font-semibold text-zinc-700 dark:text-zinc-300 tablet:px-6">
                     Name
                   </th>
-                  <th className="px-4 py-3 font-medium text-zinc-700 dark:text-zinc-300">
+                  <th className="px-4 py-3.5 font-semibold text-zinc-700 dark:text-zinc-300 tablet:px-6">
                     Last name
                   </th>
-                  <th className="px-4 py-3 font-medium text-zinc-700 dark:text-zinc-300">
+                  <th className="px-4 py-3.5 font-semibold text-zinc-700 dark:text-zinc-300 tablet:px-6">
                     Phone
                   </th>
-                  <th className="px-4 py-3 font-medium text-zinc-700 dark:text-zinc-300">
+                  <th className="px-4 py-3.5 font-semibold text-zinc-700 dark:text-zinc-300 tablet:px-6">
                     Reference
                   </th>
-                  <th className="px-4 py-3 font-medium text-zinc-700 dark:text-zinc-300">
+                  <th className="px-4 py-3.5 font-semibold text-zinc-700 dark:text-zinc-300 tablet:px-6">
                     Created
                   </th>
-                  <th className="px-4 py-3 font-medium text-zinc-700 dark:text-zinc-300">
+                  <th className="px-4 py-3.5 font-semibold text-zinc-700 dark:text-zinc-300 tablet:px-6">
                     <span className="sr-only">Actions</span>
                   </th>
                 </tr>
@@ -275,29 +325,29 @@ export function ClientsView({ initialClients, fetchError }) {
                 {clients.map((client) => (
                   <tr
                     key={client.id}
-                    className="border-b border-zinc-100 last:border-0 dark:border-zinc-800"
+                    className="border-b border-zinc-100 last:border-0 transition-colors hover:bg-zinc-50/50 dark:border-zinc-800 dark:hover:bg-zinc-800/30"
                   >
-                    <td className="px-4 py-3 text-zinc-900 dark:text-zinc-50">
+                    <td className="px-4 py-3.5 font-medium text-zinc-900 dark:text-zinc-50 tablet:px-6">
                       {client.name}
                     </td>
-                    <td className="px-4 py-3 text-zinc-900 dark:text-zinc-50">
+                    <td className="px-4 py-3.5 text-zinc-900 dark:text-zinc-50 tablet:px-6">
                       {client.last_name}
                     </td>
-                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                    <td className="px-4 py-3.5 text-zinc-600 dark:text-zinc-400 tablet:px-6">
                       {client.phone_number || "—"}
                     </td>
-                    <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                    <td className="px-4 py-3.5 text-zinc-600 dark:text-zinc-400 tablet:px-6">
                       {client.reference || "—"}
                     </td>
-                    <td className="px-4 py-3 text-zinc-500 dark:text-zinc-500">
+                    <td className="px-4 py-3.5 text-zinc-500 dark:text-zinc-500 tablet:px-6">
                       {formatDate(client.created_at)}
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-2">
+                    <td className="px-4 py-3.5 tablet:px-6">
+                      <div className="flex gap-3">
                         <button
                           type="button"
                           onClick={() => openEdit(client)}
-                          className="font-medium text-zinc-600 underline-offset-2 hover:underline dark:text-zinc-400"
+                          className="font-medium text-emerald-600 underline-offset-2 hover:underline dark:text-emerald-400"
                           aria-label={`Edit ${client.name} ${client.last_name}`}
                         >
                           Edit
@@ -323,27 +373,27 @@ export function ClientsView({ initialClients, fetchError }) {
       {/* Create/Edit modal */}
       {formOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
           aria-labelledby="client-form-title"
         >
           <div
-            className="w-full max-w-2xl rounded-xl border border-zinc-200 bg-white p-6 shadow-lg dark:border-zinc-800 dark:bg-zinc-900"
+            className="w-full max-w-2xl rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-xl dark:border-zinc-800 dark:bg-zinc-900 tablet:p-8"
             onKeyDown={(e) => e.key === "Escape" && closeForm()}
           >
-            <h2 id="client-form-title" className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+            <h2 id="client-form-title" className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
               {isEditing ? "Edit client" : "Add client"}
             </h2>
             <form
               onSubmit={handleFormSubmit}
-              className="mt-4 flex flex-col gap-4"
+              className="mt-6 flex flex-col gap-5"
             >
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 tablet:grid-cols-2">
               <div>
                 <label
                   htmlFor="client-name"
-                  className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                  className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
                 >
                   Name <span className="text-red-500">*</span>
                 </label>
@@ -356,14 +406,14 @@ export function ClientsView({ initialClients, fetchError }) {
                     setFormData((prev) => ({ ...prev, name: e.target.value }))
                   }
                   disabled={isSubmitting}
-                  className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-200 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-400 dark:focus:ring-zinc-700"
+                  className={inputClass}
                   aria-invalid={!!formError}
                 />
               </div>
               <div>
                 <label
                   htmlFor="client-last-name"
-                  className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                  className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
                 >
                   Last name <span className="text-red-500">*</span>
                 </label>
@@ -379,14 +429,14 @@ export function ClientsView({ initialClients, fetchError }) {
                     }))
                   }
                   disabled={isSubmitting}
-                  className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-200 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-400 dark:focus:ring-zinc-700"
+                  className={inputClass}
                   aria-invalid={!!formError}
                 />
               </div>
               <div>
                 <label
                   htmlFor="client-phone"
-                  className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                  className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
                 >
                   Phone number
                 </label>
@@ -401,13 +451,13 @@ export function ClientsView({ initialClients, fetchError }) {
                     }))
                   }
                   disabled={isSubmitting}
-                  className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-200 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-400 dark:focus:ring-zinc-700"
+                  className={inputClass}
                 />
               </div>
               <div>
                 <label
                   htmlFor="client-reference"
-                  className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                  className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
                 >
                   Reference
                 </label>
@@ -422,17 +472,17 @@ export function ClientsView({ initialClients, fetchError }) {
                     }))
                   }
                   disabled={isSubmitting}
-                  className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-200 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-400 dark:focus:ring-zinc-700"
+                  className={inputClass}
                 />
               </div>
               </div>
 
               {isEditing && (
-                <div className="border-t border-zinc-200 pt-4 dark:border-zinc-700">
-                  <h3 className="mb-3 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                <div className="border-t border-zinc-200/80 pt-5 dark:border-zinc-700">
+                  <h3 className="mb-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
                     Services
                   </h3>
-                  <p className="mb-3 text-xs text-zinc-500 dark:text-zinc-400">
+                  <p className="mb-4 text-xs text-zinc-500 dark:text-zinc-400">
                     Link or unlink services. You can add multiple accounts per
                     service (e.g. two Claro accounts with different
                     account/receipt numbers).
@@ -447,13 +497,13 @@ export function ClientsView({ initialClients, fetchError }) {
                       section first.
                     </p>
                   ) : (
-                    <ul className="grid grid-cols-2 gap-3" role="list">
+                    <ul className="grid grid-cols-1 gap-3 tablet:grid-cols-2" role="list">
                       {servicesList.map((service) => {
                         const receipts = getReceiptsForService(service.id);
                         return (
                           <li
                             key={service.id}
-                            className="flex flex-col gap-2 rounded-lg border border-zinc-200 bg-zinc-50/50 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800/50"
+                            className="flex flex-col gap-2 rounded-xl border border-zinc-200/80 bg-zinc-50/50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800/50"
                           >
                             <span className="font-medium text-zinc-900 dark:text-zinc-50">
                               {service.name}
@@ -466,7 +516,7 @@ export function ClientsView({ initialClients, fetchError }) {
                                   return (
                                     <li
                                       key={receipt.id}
-                                      className="flex items-center justify-between gap-2 rounded border border-zinc-200 bg-white px-2 py-1.5 dark:border-zinc-600 dark:bg-zinc-800"
+                                      className="flex items-center justify-between gap-2 rounded-lg border border-zinc-200/80 bg-white px-3 py-2 dark:border-zinc-600 dark:bg-zinc-800"
                                     >
                                       <span className="truncate text-xs text-zinc-700 dark:text-zinc-300">
                                         {receipt.account_receipt_number}
@@ -519,7 +569,7 @@ export function ClientsView({ initialClients, fetchError }) {
                                   }
                                 }}
                                 disabled={isLinking}
-                                className="min-w-0 flex-1 rounded border border-zinc-300 bg-white px-2 py-1.5 text-sm placeholder-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-200 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-zinc-400 dark:focus:ring-zinc-700"
+                                className="min-w-0 flex-1 rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-emerald-400 dark:focus:ring-emerald-500/30"
                                 aria-label={`Account/receipt number for ${service.name}`}
                               />
                               <button
@@ -533,7 +583,7 @@ export function ClientsView({ initialClients, fetchError }) {
                                     ? true
                                     : !linkForm.accountNumber?.trim())
                                 }
-                                className="rounded bg-zinc-900 px-2 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                                className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50 dark:bg-emerald-500 dark:hover:bg-emerald-600"
                                 aria-label={`Add ${service.name} account`}
                               >
                                 {receipts.length === 0 ? "Link" : "Add"}
@@ -547,7 +597,7 @@ export function ClientsView({ initialClients, fetchError }) {
                   {linkError && (
                     <div
                       role="alert"
-                      className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300"
+                      className="mt-3 rounded-xl bg-red-50 px-4 py-2.5 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300"
                     >
                       {linkError}
                     </div>
@@ -558,7 +608,7 @@ export function ClientsView({ initialClients, fetchError }) {
               {formError && (
                 <div
                   role="alert"
-                  className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300"
+                  className="rounded-xl bg-red-50 px-4 py-2.5 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300"
                 >
                   {formError}
                 </div>
@@ -568,7 +618,7 @@ export function ClientsView({ initialClients, fetchError }) {
                   type="button"
                   onClick={closeForm}
                   disabled={isSubmitting}
-                  className="flex-1 rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                  className="flex-1 rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-700 transition-all hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
                   aria-label="Cancel"
                 >
                   Cancel
@@ -576,7 +626,7 @@ export function ClientsView({ initialClients, fetchError }) {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:focus:ring-offset-zinc-900"
+                  className="flex-1 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-medium text-white transition-all hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:focus:ring-offset-zinc-900"
                   aria-busy={isSubmitting}
                   aria-label={isEditing ? "Save changes" : "Create client"}
                 >
@@ -595,14 +645,14 @@ export function ClientsView({ initialClients, fetchError }) {
       {/* Delete confirmation */}
       {deleteTarget && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
           role="alertdialog"
           aria-modal="true"
           aria-labelledby="delete-dialog-title"
           aria-describedby="delete-dialog-desc"
         >
-          <div className="w-full max-w-sm rounded-xl border border-zinc-200 bg-white p-6 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
-            <h2 id="delete-dialog-title" className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
+          <div className="w-full max-w-sm rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
+            <h2 id="delete-dialog-title" className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
               Delete client
             </h2>
             <p id="delete-dialog-desc" className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
@@ -615,7 +665,7 @@ export function ClientsView({ initialClients, fetchError }) {
             {deleteError && (
               <div
                 role="alert"
-                className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300"
+                className="mt-3 rounded-xl bg-red-50 px-4 py-2.5 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300"
               >
                 {deleteError}
               </div>
@@ -625,7 +675,7 @@ export function ClientsView({ initialClients, fetchError }) {
                 type="button"
                 onClick={handleDeleteCancel}
                 disabled={isDeleting}
-                className="flex-1 rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                className="flex-1 rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-700 transition-all hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
                 aria-label="Cancel"
               >
                 Cancel
@@ -634,7 +684,7 @@ export function ClientsView({ initialClients, fetchError }) {
                 type="button"
                 onClick={handleDeleteConfirm}
                 disabled={isDeleting}
-                className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 dark:focus:ring-offset-zinc-900"
+                className="flex-1 rounded-xl bg-red-600 px-4 py-3 text-sm font-medium text-white transition-all hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 dark:focus:ring-offset-zinc-900"
                 aria-busy={isDeleting}
                 aria-label="Delete client"
               >

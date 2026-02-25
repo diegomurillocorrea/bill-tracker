@@ -41,14 +41,17 @@ export default function SignupPage() {
     );
   };
 
+  const inputClass =
+    "w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-zinc-900 placeholder-zinc-400 transition-all duration-200 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-emerald-400 dark:focus:ring-emerald-500/30";
+
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-50 px-4 dark:bg-zinc-950">
-      <main className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-100 px-4 py-8 dark:bg-zinc-950">
+      <main className="w-full max-w-md rounded-2xl border border-zinc-200/80 bg-white p-8 shadow-lg dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-xl tablet:p-10">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 tablet:text-3xl">
             Bill Tracker
           </h1>
-          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
             Create your account
           </p>
         </div>
@@ -70,7 +73,7 @@ export default function SignupPage() {
               placeholder="you@example.com"
               required
               disabled={isLoading}
-              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 placeholder-zinc-400 transition-colors focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-200 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-zinc-400 dark:focus:ring-zinc-700"
+              className={inputClass}
               aria-label="Email address"
               aria-invalid={!!error}
             />
@@ -93,7 +96,7 @@ export default function SignupPage() {
               required
               minLength={6}
               disabled={isLoading}
-              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 placeholder-zinc-400 transition-colors focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-200 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-zinc-400 dark:focus:ring-zinc-700"
+              className={inputClass}
               aria-label="Password"
               aria-invalid={!!error}
             />
@@ -102,7 +105,7 @@ export default function SignupPage() {
           {error && (
             <div
               role="alert"
-              className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300"
+              className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300"
             >
               {error}
             </div>
@@ -111,7 +114,7 @@ export default function SignupPage() {
           {message && (
             <div
               role="status"
-              className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800 dark:bg-green-950/50 dark:text-green-200"
+              className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200"
             >
               {message}
             </div>
@@ -120,7 +123,7 @@ export default function SignupPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="flex h-11 w-full items-center justify-center rounded-lg bg-zinc-900 font-medium text-white transition-colors hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-500 focus:ring-offset-2 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:focus:ring-zinc-400 dark:focus:ring-offset-zinc-900"
+            className="flex h-12 w-full items-center justify-center rounded-xl bg-emerald-600 font-medium text-white transition-all duration-200 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:focus:ring-offset-zinc-900"
             aria-busy={isLoading}
             aria-label="Create account"
           >
@@ -128,11 +131,11 @@ export default function SignupPage() {
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="mt-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
           Already have an account?{" "}
           <Link
             href="/login"
-            className="font-medium text-zinc-900 underline-offset-2 hover:underline dark:text-zinc-100"
+            className="font-medium text-emerald-600 underline-offset-2 hover:underline dark:text-emerald-400"
           >
             Sign in
           </Link>

@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useCallback } from "react";
+import { useBreakpoint } from "@/hooks/use-breakpoint";
 import {
   createServiceAction,
   updateServiceAction,
@@ -20,6 +21,8 @@ function formatDate(isoString) {
 
 export function ServicesView({ initialServices, fetchError }) {
   const router = useRouter();
+  const breakpoint = useBreakpoint();
+  const isMobile = breakpoint === "mobile";
   const services = initialServices;
   const [formOpen, setFormOpen] = useState(null);
   const [formName, setFormName] = useState("");
@@ -100,14 +103,17 @@ export function ServicesView({ initialServices, fetchError }) {
     setDeleteError(null);
   }, []);
 
+  const inputClass =
+    "w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-zinc-900 placeholder-zinc-400 transition-all duration-200 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-emerald-400 dark:focus:ring-emerald-500/30";
+
   return (
-    <div className="space-y-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-6 tablet:space-y-8">
+      <header className="flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 tablet:text-3xl">
             Services
           </h1>
-          <p className="mt-1 text-zinc-600 dark:text-zinc-400">
+          <p className="mt-1.5 text-sm text-zinc-600 dark:text-zinc-400 tablet:text-base">
             Bill types (e.g. Water, Electrical Power, Internet). Add, edit, or
             remove services.
           </p>
@@ -115,7 +121,7 @@ export function ServicesView({ initialServices, fetchError }) {
         <button
           type="button"
           onClick={openCreate}
-          className="inline-flex h-10 items-center justify-center rounded-lg bg-zinc-900 px-4 text-sm font-medium text-white transition-colors hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:focus:ring-offset-zinc-900"
+          className="inline-flex h-11 min-w-[10rem] items-center justify-center rounded-xl bg-emerald-600 px-5 text-sm font-medium text-white transition-all duration-200 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:focus:ring-offset-zinc-900"
           aria-label="Add service"
         >
           Add service
@@ -125,21 +131,21 @@ export function ServicesView({ initialServices, fetchError }) {
       {fetchError && (
         <div
           role="alert"
-          className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300"
+          className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300"
         >
           {fetchError}
         </div>
       )}
 
-      <div className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
-          <h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+      <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="border-b border-zinc-200/80 bg-zinc-50/50 px-4 py-3.5 dark:border-zinc-800 dark:bg-zinc-800/30 tablet:px-6">
+          <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
             Service list
           </h2>
         </div>
 
         {services.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-4 px-4 py-16 text-center">
+          <div className="flex flex-col items-center justify-center gap-5 px-4 py-20 text-center">
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
               No services yet. Add your first service (e.g. Water, Electrical
               Power, Internet) to get started.
@@ -147,24 +153,60 @@ export function ServicesView({ initialServices, fetchError }) {
             <button
               type="button"
               onClick={openCreate}
-              className="text-sm font-medium text-zinc-900 underline-offset-2 hover:underline dark:text-zinc-50"
+              className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-5 text-sm font-medium text-white transition-all hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600"
               aria-label="Add service"
             >
               Add service
             </button>
           </div>
+        ) : isMobile ? (
+          <ul className="divide-y divide-zinc-200/80 px-4 py-2 dark:divide-zinc-800 tablet:px-6" role="list">
+            {services.map((service) => (
+              <li
+                key={service.id}
+                className="flex flex-col gap-2 py-4 first:pt-4 last:pb-4"
+              >
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-semibold text-zinc-900 dark:text-zinc-50">
+                    {service.name}
+                  </span>
+                  <span className="text-xs text-zinc-500 dark:text-zinc-500">
+                    {formatDate(service.created_at)}
+                  </span>
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => openEdit(service)}
+                    className="text-sm font-medium text-emerald-600 underline-offset-2 hover:underline dark:text-emerald-400"
+                    aria-label={`Edit ${service.name}`}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteClick(service)}
+                    className="text-sm font-medium text-red-600 underline-offset-2 hover:underline dark:text-red-400"
+                    aria-label={`Delete ${service.name}`}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm" role="grid">
               <thead>
-                <tr className="border-b border-zinc-200 dark:border-zinc-800">
-                  <th className="px-4 py-3 font-medium text-zinc-700 dark:text-zinc-300">
+                <tr className="border-b border-zinc-200/80 dark:border-zinc-800">
+                  <th className="px-4 py-3.5 font-semibold text-zinc-700 dark:text-zinc-300 tablet:px-6">
                     Name
                   </th>
-                  <th className="px-4 py-3 font-medium text-zinc-700 dark:text-zinc-300">
+                  <th className="px-4 py-3.5 font-semibold text-zinc-700 dark:text-zinc-300 tablet:px-6">
                     Created
                   </th>
-                  <th className="px-4 py-3 font-medium text-zinc-700 dark:text-zinc-300">
+                  <th className="px-4 py-3.5 font-semibold text-zinc-700 dark:text-zinc-300 tablet:px-6">
                     <span className="sr-only">Actions</span>
                   </th>
                 </tr>
@@ -173,20 +215,20 @@ export function ServicesView({ initialServices, fetchError }) {
                 {services.map((service) => (
                   <tr
                     key={service.id}
-                    className="border-b border-zinc-100 last:border-0 dark:border-zinc-800"
+                    className="border-b border-zinc-100 last:border-0 transition-colors hover:bg-zinc-50/50 dark:border-zinc-800 dark:hover:bg-zinc-800/30"
                   >
-                    <td className="px-4 py-3 text-zinc-900 dark:text-zinc-50">
+                    <td className="px-4 py-3.5 font-medium text-zinc-900 dark:text-zinc-50 tablet:px-6">
                       {service.name}
                     </td>
-                    <td className="px-4 py-3 text-zinc-500 dark:text-zinc-500">
+                    <td className="px-4 py-3.5 text-zinc-500 dark:text-zinc-500 tablet:px-6">
                       {formatDate(service.created_at)}
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-2">
+                    <td className="px-4 py-3.5 tablet:px-6">
+                      <div className="flex gap-3">
                         <button
                           type="button"
                           onClick={() => openEdit(service)}
-                          className="font-medium text-zinc-600 underline-offset-2 hover:underline dark:text-zinc-400"
+                          className="font-medium text-emerald-600 underline-offset-2 hover:underline dark:text-emerald-400"
                           aria-label={`Edit ${service.name}`}
                         >
                           Edit
@@ -212,29 +254,29 @@ export function ServicesView({ initialServices, fetchError }) {
       {/* Create/Edit modal */}
       {formOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
           aria-labelledby="service-form-title"
         >
           <div
-            className="w-full max-w-md rounded-xl border border-zinc-200 bg-white p-6 shadow-lg dark:border-zinc-800 dark:bg-zinc-900"
+            className="w-full max-w-md rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-xl dark:border-zinc-800 dark:bg-zinc-900 tablet:p-8"
             onKeyDown={(e) => e.key === "Escape" && closeForm()}
           >
             <h2
               id="service-form-title"
-              className="text-lg font-semibold text-zinc-900 dark:text-zinc-50"
+              className="text-xl font-bold text-zinc-900 dark:text-zinc-50"
             >
               {isEditing ? "Edit service" : "Add service"}
             </h2>
             <form
               onSubmit={handleFormSubmit}
-              className="mt-4 flex flex-col gap-4"
+              className="mt-6 flex flex-col gap-5"
             >
               <div>
                 <label
                   htmlFor="service-name"
-                  className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                  className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
                 >
                   Name <span className="text-red-500">*</span>
                 </label>
@@ -245,14 +287,14 @@ export function ServicesView({ initialServices, fetchError }) {
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   disabled={isSubmitting}
-                  className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-200 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-400 dark:focus:ring-zinc-700"
+                  className={inputClass}
                   aria-invalid={!!formError}
                 />
               </div>
               {formError && (
                 <div
                   role="alert"
-                  className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300"
+                  className="rounded-xl bg-red-50 px-4 py-2.5 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300"
                 >
                   {formError}
                 </div>
@@ -262,7 +304,7 @@ export function ServicesView({ initialServices, fetchError }) {
                   type="button"
                   onClick={closeForm}
                   disabled={isSubmitting}
-                  className="flex-1 rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                  className="flex-1 rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-700 transition-all hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
                   aria-label="Cancel"
                 >
                   Cancel
@@ -270,7 +312,7 @@ export function ServicesView({ initialServices, fetchError }) {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400 focus:ring-offset-2 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:focus:ring-offset-zinc-900"
+                  className="flex-1 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-medium text-white transition-all hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:focus:ring-offset-zinc-900"
                   aria-busy={isSubmitting}
                   aria-label={isEditing ? "Save changes" : "Create service"}
                 >
@@ -289,16 +331,16 @@ export function ServicesView({ initialServices, fetchError }) {
       {/* Delete confirmation */}
       {deleteTarget && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
           role="alertdialog"
           aria-modal="true"
           aria-labelledby="delete-dialog-title"
           aria-describedby="delete-dialog-desc"
         >
-          <div className="w-full max-w-sm rounded-xl border border-zinc-200 bg-white p-6 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="w-full max-w-sm rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
             <h2
               id="delete-dialog-title"
-              className="text-lg font-semibold text-zinc-900 dark:text-zinc-50"
+              className="text-xl font-bold text-zinc-900 dark:text-zinc-50"
             >
               Delete service
             </h2>
@@ -312,7 +354,7 @@ export function ServicesView({ initialServices, fetchError }) {
             {deleteError && (
               <div
                 role="alert"
-                className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300"
+                className="mt-3 rounded-xl bg-red-50 px-4 py-2.5 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300"
               >
                 {deleteError}
               </div>
@@ -322,7 +364,7 @@ export function ServicesView({ initialServices, fetchError }) {
                 type="button"
                 onClick={handleDeleteCancel}
                 disabled={isDeleting}
-                className="flex-1 rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                className="flex-1 rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-700 transition-all hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
                 aria-label="Cancel"
               >
                 Cancel
@@ -331,7 +373,7 @@ export function ServicesView({ initialServices, fetchError }) {
                 type="button"
                 onClick={handleDeleteConfirm}
                 disabled={isDeleting}
-                className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 dark:focus:ring-offset-zinc-900"
+                className="flex-1 rounded-xl bg-red-600 px-4 py-3 text-sm font-medium text-white transition-all hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 dark:focus:ring-offset-zinc-900"
                 aria-busy={isDeleting}
                 aria-label="Delete service"
               >
