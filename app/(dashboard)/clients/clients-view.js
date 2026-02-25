@@ -1,11 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   createClientAction,
   updateClientAction,
   deleteClientAction,
+  getServicesListAction,
+  getClientReceiptsAction,
+  createReceiptAction,
+  deleteReceiptByIdAction,
 } from "./actions";
 
 const EMPTY_FORM = {
@@ -36,7 +40,39 @@ export function ClientsView({ initialClients, fetchError }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState(null);
 
+  const [servicesList, setServicesList] = useState([]);
+  const [clientReceipts, setClientReceipts] = useState([]);
+  const [servicesLoading, setServicesLoading] = useState(false);
+  const [linkForm, setLinkForm] = useState({ serviceId: null, accountNumber: "" });
+  const [linkError, setLinkError] = useState(null);
+  const [isLinking, setIsLinking] = useState(false);
+  const [unlinkingReceiptId, setUnlinkingReceiptId] = useState(null);
+
   const isEditing = formOpen && formOpen !== "create";
+
+  useEffect(() => {
+    if (!isEditing || !formOpen?.id) {
+      setServicesList([]);
+      setClientReceipts([]);
+      return;
+    }
+    let cancelled = false;
+    setServicesLoading(true);
+    Promise.all([
+      getServicesListAction(),
+      getClientReceiptsAction(formOpen.id),
+    ]).then(([servicesRes, receiptsRes]) => {
+      if (cancelled) return;
+      setServicesLoading(false);
+      if (servicesRes.error) return;
+      if (receiptsRes.error) return;
+      setServicesList(servicesRes.services ?? []);
+      setClientReceipts(receiptsRes.receipts ?? []);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isEditing, formOpen?.id]);
 
   const openCreate = useCallback(() => {
     setFormOpen("create");
@@ -59,7 +95,54 @@ export function ClientsView({ initialClients, fetchError }) {
     setFormOpen(null);
     setFormData(EMPTY_FORM);
     setFormError(null);
+    setLinkForm({ serviceId: null, accountNumber: "" });
+    setLinkError(null);
   }, []);
+
+  const getReceiptsForService = useCallback(
+    (serviceId) =>
+      clientReceipts.filter((r) => r.service_id === serviceId),
+    [clientReceipts]
+  );
+
+  const handleLinkService = async (e, serviceId) => {
+    e.preventDefault();
+    const accountNumber =
+      serviceId === linkForm.serviceId
+        ? linkForm.accountNumber?.trim()
+        : "";
+    if (!isEditing || !serviceId || !accountNumber) {
+      setLinkError("Account/receipt number is required.");
+      return;
+    }
+    setLinkError(null);
+    setIsLinking(true);
+    const result = await createReceiptAction({
+      client_id: formOpen.id,
+      service_id: serviceId,
+      account_receipt_number: accountNumber,
+    });
+    setIsLinking(false);
+    if (result.error) {
+      setLinkError(result.error);
+      return;
+    }
+    setLinkForm({ serviceId: null, accountNumber: "" });
+    const receiptsRes = await getClientReceiptsAction(formOpen.id);
+    if (!receiptsRes.error) setClientReceipts(receiptsRes.receipts ?? []);
+    router.refresh();
+  };
+
+  const handleUnlinkReceipt = async (receiptId) => {
+    if (!isEditing) return;
+    setUnlinkingReceiptId(receiptId);
+    const result = await deleteReceiptByIdAction(receiptId);
+    setUnlinkingReceiptId(null);
+    if (!result.error) {
+      setClientReceipts((prev) => prev.filter((r) => r.id !== receiptId));
+      router.refresh();
+    }
+  };
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
@@ -246,13 +329,17 @@ export function ClientsView({ initialClients, fetchError }) {
           aria-labelledby="client-form-title"
         >
           <div
-            className="w-full max-w-md rounded-xl border border-zinc-200 bg-white p-6 shadow-lg dark:border-zinc-800 dark:bg-zinc-900"
+            className="w-full max-w-2xl rounded-xl border border-zinc-200 bg-white p-6 shadow-lg dark:border-zinc-800 dark:bg-zinc-900"
             onKeyDown={(e) => e.key === "Escape" && closeForm()}
           >
             <h2 id="client-form-title" className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">
               {isEditing ? "Edit client" : "Add client"}
             </h2>
-            <form onSubmit={handleFormSubmit} className="mt-4 flex flex-col gap-4">
+            <form
+              onSubmit={handleFormSubmit}
+              className="mt-4 flex flex-col gap-4"
+            >
+              <div className="grid grid-cols-2 gap-4">
               <div>
                 <label
                   htmlFor="client-name"
@@ -338,6 +425,136 @@ export function ClientsView({ initialClients, fetchError }) {
                   className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-zinc-900 placeholder-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-2 focus:ring-zinc-200 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:focus:border-zinc-400 dark:focus:ring-zinc-700"
                 />
               </div>
+              </div>
+
+              {isEditing && (
+                <div className="border-t border-zinc-200 pt-4 dark:border-zinc-700">
+                  <h3 className="mb-3 text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    Services
+                  </h3>
+                  <p className="mb-3 text-xs text-zinc-500 dark:text-zinc-400">
+                    Link or unlink services. You can add multiple accounts per
+                    service (e.g. two Claro accounts with different
+                    account/receipt numbers).
+                  </p>
+                  {servicesLoading ? (
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                      Loading services…
+                    </p>
+                  ) : servicesList.length === 0 ? (
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                      No services defined yet. Add services in the Services
+                      section first.
+                    </p>
+                  ) : (
+                    <ul className="grid grid-cols-2 gap-3" role="list">
+                      {servicesList.map((service) => {
+                        const receipts = getReceiptsForService(service.id);
+                        return (
+                          <li
+                            key={service.id}
+                            className="flex flex-col gap-2 rounded-lg border border-zinc-200 bg-zinc-50/50 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800/50"
+                          >
+                            <span className="font-medium text-zinc-900 dark:text-zinc-50">
+                              {service.name}
+                            </span>
+                            {receipts.length > 0 && (
+                              <ul className="space-y-1.5" role="list">
+                                {receipts.map((receipt) => {
+                                  const isUnlinking =
+                                    unlinkingReceiptId === receipt.id;
+                                  return (
+                                    <li
+                                      key={receipt.id}
+                                      className="flex items-center justify-between gap-2 rounded border border-zinc-200 bg-white px-2 py-1.5 dark:border-zinc-600 dark:bg-zinc-800"
+                                    >
+                                      <span className="truncate text-xs text-zinc-700 dark:text-zinc-300">
+                                        {receipt.account_receipt_number}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleUnlinkReceipt(receipt.id)
+                                        }
+                                        disabled={isUnlinking}
+                                        className="shrink-0 text-xs font-medium text-red-600 hover:underline disabled:opacity-50 dark:text-red-400"
+                                        aria-label={`Remove ${receipt.account_receipt_number}`}
+                                      >
+                                        {isUnlinking ? "…" : "Unlink"}
+                                      </button>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            )}
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                placeholder="Account/receipt number"
+                                value={
+                                  linkForm.serviceId === service.id
+                                    ? linkForm.accountNumber
+                                    : ""
+                                }
+                                onChange={(e) =>
+                                  setLinkForm({
+                                    serviceId: service.id,
+                                    accountNumber: e.target.value,
+                                  })
+                                }
+                                onFocus={() =>
+                                  setLinkForm((prev) =>
+                                    prev.serviceId === service.id
+                                      ? prev
+                                      : {
+                                          serviceId: service.id,
+                                          accountNumber: "",
+                                        }
+                                  )
+                                }
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    handleLinkService(e, service.id);
+                                  }
+                                }}
+                                disabled={isLinking}
+                                className="min-w-0 flex-1 rounded border border-zinc-300 bg-white px-2 py-1.5 text-sm placeholder-zinc-400 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-200 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-zinc-400 dark:focus:ring-zinc-700"
+                                aria-label={`Account/receipt number for ${service.name}`}
+                              />
+                              <button
+                                type="button"
+                                onClick={(e) =>
+                                  handleLinkService(e, service.id)
+                                }
+                                disabled={
+                                  isLinking ||
+                                  (linkForm.serviceId !== service.id
+                                    ? true
+                                    : !linkForm.accountNumber?.trim())
+                                }
+                                className="rounded bg-zinc-900 px-2 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200"
+                                aria-label={`Add ${service.name} account`}
+                              >
+                                {receipts.length === 0 ? "Link" : "Add"}
+                              </button>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                  {linkError && (
+                    <div
+                      role="alert"
+                      className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300"
+                    >
+                      {linkError}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {formError && (
                 <div
                   role="alert"
