@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { href: "/", label: "Overview" },
   { href: "/clients", label: "Clients" },
   { href: "/services", label: "Services" },
+  { href: "/payments", label: "Payments" },
 ];
 
 export default function DashboardLayout({ children }) {
