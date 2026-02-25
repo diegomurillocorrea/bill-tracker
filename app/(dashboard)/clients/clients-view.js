@@ -370,24 +370,25 @@ export function ClientsView({ initialClients, fetchError }) {
         )}
       </div>
 
-      {/* Create/Edit modal */}
+      {/* Create/Edit modal: scrollable with max-height on mobile; desktop-style on tablet+ */}
       {formOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm tablet:p-6"
           role="dialog"
           aria-modal="true"
           aria-labelledby="client-form-title"
         >
           <div
-            className="w-full max-w-2xl rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-xl dark:border-zinc-800 dark:bg-zinc-900 tablet:p-8"
+            className="flex w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900 max-h-[90dvh] tablet:max-h-none tablet:p-8 p-6"
             onKeyDown={(e) => e.key === "Escape" && closeForm()}
           >
-            <h2 id="client-form-title" className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
+            <h2 id="client-form-title" className="shrink-0 text-xl font-bold text-zinc-900 dark:text-zinc-50">
               {isEditing ? "Edit client" : "Add client"}
             </h2>
+            <div className="min-h-0 flex-1 overflow-y-auto mt-6 -mr-2 pr-2 tablet:mr-0 tablet:pr-0">
             <form
               onSubmit={handleFormSubmit}
-              className="mt-6 flex flex-col gap-5"
+              className="flex flex-col gap-5 pb-2"
             >
               <div className="grid grid-cols-1 gap-4 tablet:grid-cols-2">
               <div>
@@ -638,6 +639,7 @@ export function ClientsView({ initialClients, fetchError }) {
                 </button>
               </div>
             </form>
+            </div>
           </div>
         </div>
       )}
