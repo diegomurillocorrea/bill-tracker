@@ -9,6 +9,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
@@ -93,7 +94,7 @@ function LoginForm() {
             </label>
             <input
               id="password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               autoComplete={isRecovery ? "new-password" : "current-password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -104,6 +105,23 @@ function LoginForm() {
               aria-label="Contraseña"
               aria-invalid={!!displayError}
             />
+            <div className="mt-2 flex items-center">
+              <input
+                id="show-password"
+                type="checkbox"
+                checked={showPassword}
+                onChange={(e) => setShowPassword(e.target.checked)}
+                disabled={isLoading}
+                className="h-4 w-4 rounded border-zinc-300 accent-emerald-600 transition-colors focus:ring-2 focus:ring-emerald-500/20 focus:ring-offset-2 disabled:opacity-50 dark:border-zinc-600 dark:accent-emerald-500 dark:focus:ring-emerald-500/30 dark:focus:ring-offset-zinc-900"
+                aria-label="Mostrar contraseña"
+              />
+              <label
+                htmlFor="show-password"
+                className="ml-2 text-sm text-zinc-600 dark:text-zinc-400"
+              >
+                Mostrar contraseña
+              </label>
+            </div>
           </div>
 
           {displayError && (
