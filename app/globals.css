@@ -1,20 +1,6 @@
 @import "tailwindcss";
 
-:root {
-  --background: #fafafa;
-  --foreground: #18181b;
-  --accent: #059669;
-  --accent-hover: #047857;
-  --accent-foreground: #ffffff;
-  --card: #ffffff;
-  --card-border: #e4e4e7;
-  --muted: #71717a;
-  --muted-bg: #f4f4f5;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   /* Responsive breakpoints: Mobile 0–768px, Tablet 769–1280px, Desktop 1281px+ */
@@ -22,18 +8,19 @@
   --breakpoint-desktop: 1281px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #09090b;
-    --foreground: #fafafa;
-    --accent: #10b981;
-    --accent-hover: #34d399;
-    --accent-foreground: #ffffff;
-    --card: #18181b;
-    --card-border: #27272a;
-    --muted: #a1a1aa;
-    --muted-bg: #27272a;
-  }
+@variant dark (&:where(.dark, .dark *)) {
+}
+
+:root {
+  color-scheme: light dark;
+}
+
+:root.dark {
+  color-scheme: dark;
+}
+
+:root.light {
+  color-scheme: light;
 }
 
 * {
@@ -45,8 +32,6 @@ html {
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   font-feature-settings: "rlig" 1, "calt" 1;
 }
