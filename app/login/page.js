@@ -47,34 +47,6 @@ function LoginForm() {
     router.push(redirectTo);
   };
 
-  const handleForgotPassword = async (e) => {
-    e.preventDefault();
-    if (!email.trim()) {
-      setError("Enter your email to reset your password.");
-      return;
-    }
-    setError(null);
-    setMessage(null);
-    setIsLoading(true);
-
-    const supabase = createClient();
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-      email.trim(),
-      {
-        redirectTo: `${window.location.origin}/auth/callback?next=/login?type=recovery`,
-      }
-    );
-
-    setIsLoading(false);
-
-    if (resetError) {
-      setError(resetError.message);
-      return;
-    }
-
-    setMessage("Check your email for the password reset link.");
-  };
-
   const inputClass =
     "w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-zinc-900 placeholder-zinc-400 transition-all duration-200 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-emerald-400 dark:focus:ring-emerald-500/30";
 
@@ -161,16 +133,6 @@ function LoginForm() {
             aria-label="Sign in"
           >
             {isLoading ? "Signing in…" : "Sign in"}
-          </button>
-
-          <button
-            type="button"
-            onClick={handleForgotPassword}
-            disabled={isLoading}
-            className="text-sm font-medium text-emerald-600 underline-offset-2 hover:underline disabled:opacity-50 dark:text-emerald-400"
-            aria-label="Send password reset email"
-          >
-            Forgot password?
           </button>
         </form>
 
