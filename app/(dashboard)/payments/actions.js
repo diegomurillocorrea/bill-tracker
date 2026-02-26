@@ -83,3 +83,63 @@ export async function createPaymentAction(payload) {
   revalidatePath("/");
   return { error: null };
 }
+
+/**
+ * @param {string} id
+ * @param {{ receipt_id: string; total_amount: number }} payload
+ * @returns {Promise<{ error: string | null }>}
+ */
+export async function updatePaymentAction(id, payload) {
+  if (!id) {
+    return { error: "El ID del pago es requerido." };
+  }
+
+  const receipt_id = payload.receipt_id?.trim();
+  const total_amount = Number(payload.total_amount);
+
+  if (!receipt_id) {
+    return { error: "El recibo es requerido." };
+  }
+
+  if (Number.isNaN(total_amount) || total_amount < 0) {
+    return { error: "El monto debe ser cero o mayor." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("payments")
+    .update({
+      receipt_id,
+      total_amount,
+    })
+    .eq("id", id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/payments");
+  revalidatePath("/");
+  return { error: null };
+}
+
+/**
+ * @param {string} id
+ * @returns {Promise<{ error: string | null }>}
+ */
+export async function deletePaymentAction(id) {
+  if (!id) {
+    return { error: "El ID del pago es requerido." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("payments").delete().eq("id", id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/payments");
+  revalidatePath("/");
+  return { error: null };
+}

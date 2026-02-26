@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
-import { createPaymentAction, searchReceiptsForPaymentAction } from "./actions";
+import { createPaymentAction, updatePaymentAction, deletePaymentAction, searchReceiptsForPaymentAction } from "./actions";
 
 const MONTHS_ES = [
   "ene", "feb", "mar", "abr", "may", "jun",
@@ -120,6 +120,10 @@ export function PaymentsView({ initialPayments, fetchError }) {
   const [amount, setAmount] = useState("");
   const [formError, setFormError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingPayment, setEditingPayment] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
   const searchTimeoutRef = useRef(null);
   const comboboxRef = useRef(null);
 
@@ -175,6 +179,45 @@ export function PaymentsView({ initialPayments, fetchError }) {
     setSearchResults([]);
   }, []);
 
+  const handleEditPayment = useCallback((payment) => {
+    const receipt = payment.receipt ?? payment.receipts;
+    setEditingPayment(payment);
+    setSelectedReceipt({ id: payment.receipt_id, label: getReceiptLabel(receipt) });
+    setAmount(String(payment.total_amount));
+    setFormError(null);
+  }, []);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingPayment(null);
+    setSelectedReceipt(null);
+    setAmount("");
+    setFormError(null);
+  }, []);
+
+  const handleDeleteClick = useCallback((payment) => {
+    setDeleteTarget(payment);
+    setDeleteError(null);
+  }, []);
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    setDeleteError(null);
+    const result = await deletePaymentAction(deleteTarget.id);
+    setIsDeleting(false);
+    if (result.error) {
+      setDeleteError(result.error);
+      return;
+    }
+    setDeleteTarget(null);
+    router.refresh();
+  };
+
+  const handleDeleteCancel = useCallback(() => {
+    setDeleteTarget(null);
+    setDeleteError(null);
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError(null);
@@ -188,15 +231,26 @@ export function PaymentsView({ initialPayments, fetchError }) {
       return;
     }
     setIsSubmitting(true);
-    const result = await createPaymentAction({
-      receipt_id: selectedReceipt.id,
-      total_amount,
-    });
+    
+    let result;
+    if (editingPayment) {
+      result = await updatePaymentAction(editingPayment.id, {
+        receipt_id: selectedReceipt.id,
+        total_amount,
+      });
+    } else {
+      result = await createPaymentAction({
+        receipt_id: selectedReceipt.id,
+        total_amount,
+      });
+    }
+    
     setIsSubmitting(false);
     if (result.error) {
       setFormError(result.error);
       return;
     }
+    setEditingPayment(null);
     setSelectedReceipt(null);
     setAmount("");
     router.refresh();
@@ -226,9 +280,22 @@ export function PaymentsView({ initialPayments, fetchError }) {
       )}
 
       <section className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 tablet:p-8">
-        <h2 className="mb-5 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-          Registrar pago
-        </h2>
+        <div className="mb-5 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+            {editingPayment ? "Editar pago" : "Registrar pago"}
+          </h2>
+          {editingPayment && (
+            <button
+              type="button"
+              onClick={handleCancelEdit}
+              disabled={isSubmitting}
+              className="text-sm font-medium text-zinc-600 hover:text-zinc-900 disabled:opacity-50 dark:text-zinc-400 dark:hover:text-zinc-50"
+              aria-label="Cancelar edición"
+            >
+              Cancelar
+            </button>
+          )}
+        </div>
         <form
           onSubmit={handleSubmit}
           className="flex flex-col gap-4 tablet:flex-row tablet:items-end tablet:gap-4"
@@ -338,9 +405,9 @@ export function PaymentsView({ initialPayments, fetchError }) {
             disabled={isSubmitting || !selectedReceipt}
             className="h-12 shrink-0 rounded-xl bg-emerald-600 px-5 text-sm font-medium text-white transition-all hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:focus:ring-offset-zinc-900"
             aria-busy={isSubmitting}
-            aria-label="Registrar pago"
+            aria-label={editingPayment ? "Guardar cambios" : "Registrar pago"}
           >
-            {isSubmitting ? "Guardando…" : "Registrar"}
+            {isSubmitting ? "Guardando…" : editingPayment ? "Guardar" : "Registrar"}
           </button>
         </form>
         {formError && (
@@ -390,7 +457,7 @@ export function PaymentsView({ initialPayments, fetchError }) {
                       {formatDate(payment.created_at)}
                     </span>
                   </div>
-                  <div className="pt-1">
+                  <div className="flex flex-wrap items-center gap-3 pt-1">
                     {whatsappUrl ? (
                       <a
                         href={whatsappUrl}
@@ -417,6 +484,22 @@ export function PaymentsView({ initialPayments, fetchError }) {
                         Enviar Comprobante
                       </span>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => handleEditPayment(payment)}
+                      className="text-sm font-medium text-emerald-600 underline-offset-2 hover:underline dark:text-emerald-400"
+                      aria-label={`Editar pago de ${getPaymentReceiptDisplay(payment)}`}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteClick(payment)}
+                      className="text-sm font-medium text-red-600 underline-offset-2 hover:underline dark:text-red-400"
+                      aria-label={`Eliminar pago de ${getPaymentReceiptDisplay(payment)}`}
+                    >
+                      Eliminar
+                    </button>
                   </div>
                 </li>
               );
@@ -460,32 +543,50 @@ export function PaymentsView({ initialPayments, fetchError }) {
                         {formatDate(payment.created_at)}
                       </td>
                       <td className="px-4 py-3.5 tablet:px-6">
-                        {whatsappUrl ? (
-                          <a
-                            href={whatsappUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600 hover:underline dark:text-emerald-400"
-                            aria-label={`Enviar comprobante por WhatsApp a ${getPaymentReceiptDisplay(payment)}`}
-                          >
-                            <span aria-hidden>Enviar Comprobante</span>
-                            <svg
-                              className="h-4 w-4 shrink-0"
-                              fill="currentColor"
-                              viewBox="0 0 24 24"
-                              aria-hidden
+                        <div className="flex flex-wrap items-center gap-3">
+                          {whatsappUrl ? (
+                            <a
+                              href={whatsappUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600 hover:underline dark:text-emerald-400"
+                              aria-label={`Enviar comprobante por WhatsApp a ${getPaymentReceiptDisplay(payment)}`}
                             >
-                              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                            </svg>
-                          </a>
-                        ) : (
-                          <span
-                            className="text-sm text-zinc-400 dark:text-zinc-500"
-                            title={hasPhone ? "Número de teléfono inválido" : "No hay número de teléfono para este cliente"}
+                              <span aria-hidden>Enviar Comprobante</span>
+                              <svg
+                                className="h-4 w-4 shrink-0"
+                                fill="currentColor"
+                                viewBox="0 0 24 24"
+                                aria-hidden
+                              >
+                                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                              </svg>
+                            </a>
+                          ) : (
+                            <span
+                              className="text-sm text-zinc-400 dark:text-zinc-500"
+                              title={hasPhone ? "Número de teléfono inválido" : "No hay número de teléfono para este cliente"}
+                            >
+                              Enviar Comprobante
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleEditPayment(payment)}
+                            className="font-medium text-emerald-600 underline-offset-2 hover:underline dark:text-emerald-400"
+                            aria-label={`Editar pago de ${getPaymentReceiptDisplay(payment)}`}
                           >
-                            Enviar Comprobante
-                          </span>
-                        )}
+                            Editar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteClick(payment)}
+                            className="font-medium text-red-600 underline-offset-2 hover:underline dark:text-red-400"
+                            aria-label={`Eliminar pago de ${getPaymentReceiptDisplay(payment)}`}
+                          >
+                            Eliminar
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -495,6 +596,57 @@ export function PaymentsView({ initialPayments, fetchError }) {
           </div>
         )}
       </section>
+
+      {/* Delete confirmation modal */}
+      {deleteTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="delete-dialog-title"
+          aria-describedby="delete-dialog-desc"
+        >
+          <div className="w-full max-w-sm rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
+            <h2 id="delete-dialog-title" className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
+              Eliminar pago
+            </h2>
+            <p id="delete-dialog-desc" className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+              ¿Estás seguro de que deseas eliminar este pago de{" "}
+              <strong>{formatAmount(deleteTarget.total_amount)}</strong>
+              ? Esta acción no se puede deshacer.
+            </p>
+            {deleteError && (
+              <div
+                role="alert"
+                className="mt-3 rounded-xl bg-red-50 px-4 py-2.5 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300"
+              >
+                {deleteError}
+              </div>
+            )}
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                onClick={handleDeleteCancel}
+                disabled={isDeleting}
+                className="flex-1 rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-700 transition-all hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                aria-label="Cancelar"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteConfirm}
+                disabled={isDeleting}
+                className="flex-1 rounded-xl bg-red-600 px-4 py-3 text-sm font-medium text-white transition-all hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 dark:focus:ring-offset-zinc-900"
+                aria-busy={isDeleting}
+                aria-label="Eliminar pago"
+              >
+                {isDeleting ? "Eliminando…" : "Eliminar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
