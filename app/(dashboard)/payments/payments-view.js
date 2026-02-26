@@ -111,7 +111,6 @@ export function PaymentsView({ initialPayments, fetchError }) {
   const router = useRouter();
   const breakpoint = useBreakpoint();
   const isMobile = breakpoint === "mobile";
-  const payments = initialPayments;
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -124,8 +123,12 @@ export function PaymentsView({ initialPayments, fetchError }) {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState(null);
+  const [dateFilter, setDateFilter] = useState("daily");
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
+  const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
   const searchTimeoutRef = useRef(null);
   const comboboxRef = useRef(null);
+  const filterDropdownRef = useRef(null);
 
   const runSearch = useCallback(async (query) => {
     const q = (query ?? "").trim();
@@ -160,6 +163,9 @@ export function PaymentsView({ initialPayments, fetchError }) {
     function handleClickOutside(event) {
       if (comboboxRef.current && !comboboxRef.current.contains(event.target)) {
         setDropdownOpen(false);
+      }
+      if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target)) {
+        setFilterDropdownOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -217,6 +223,71 @@ export function PaymentsView({ initialPayments, fetchError }) {
     setDeleteTarget(null);
     setDeleteError(null);
   }, []);
+
+  const getFilteredPayments = useCallback(() => {
+    const referenceDate = new Date(selectedDate);
+    
+    return initialPayments.filter((payment) => {
+      const paymentDate = new Date(payment.created_at);
+      
+      switch (dateFilter) {
+        case "daily": {
+          const paymentDay = new Date(paymentDate.getFullYear(), paymentDate.getMonth(), paymentDate.getDate());
+          const selectedDay = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate());
+          return paymentDay.getTime() === selectedDay.getTime();
+        }
+        case "weekly": {
+          const selectedDayStart = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate());
+          const dayOfWeek = selectedDayStart.getDay();
+          const weekStart = new Date(selectedDayStart);
+          weekStart.setDate(weekStart.getDate() - dayOfWeek);
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekEnd.getDate() + 6);
+          weekEnd.setHours(23, 59, 59, 999);
+          return paymentDate >= weekStart && paymentDate <= weekEnd;
+        }
+        case "monthly": {
+          return paymentDate.getMonth() === referenceDate.getMonth() && 
+                 paymentDate.getFullYear() === referenceDate.getFullYear();
+        }
+        case "yearly": {
+          return paymentDate.getFullYear() === referenceDate.getFullYear();
+        }
+        default:
+          return true;
+      }
+    });
+  }, [initialPayments, dateFilter, selectedDate]);
+
+  const payments = getFilteredPayments();
+
+  const getTotalAmount = useCallback(() => {
+    return payments.reduce((sum, payment) => sum + (Number(payment.total_amount) || 0), 0);
+  }, [payments]);
+
+  const getFilterLabel = () => {
+    switch (dateFilter) {
+      case "daily":
+        return "Diario";
+      case "weekly":
+        return "Semanal";
+      case "monthly":
+        return "Mensual";
+      case "yearly":
+        return "Anual";
+      default:
+        return "Diario";
+    }
+  };
+
+  const formatSelectedDate = () => {
+    const date = new Date(selectedDate);
+    const day = date.getDate();
+    const months = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+    return `${day} ${month} ${year}`;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -279,7 +350,129 @@ export function PaymentsView({ initialPayments, fetchError }) {
         </div>
       )}
 
-      <section className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 tablet:p-8">
+      <section className="rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 tablet:p-8">
+        <div className="flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
+          <div ref={filterDropdownRef} className="relative z-10 flex-1 tablet:max-w-xs">
+            <button
+              type="button"
+              onClick={() => setFilterDropdownOpen(!filterDropdownOpen)}
+              className="flex w-full items-center justify-between rounded-xl border border-zinc-300 bg-white px-4 py-3 text-left text-sm font-medium text-zinc-900 transition-all hover:border-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-50 dark:hover:border-zinc-500"
+              aria-expanded={filterDropdownOpen}
+              aria-haspopup="listbox"
+            >
+              <span>{getFilterLabel()}</span>
+              <svg
+                className={`h-5 w-5 transition-transform duration-200 ${filterDropdownOpen ? "rotate-180" : ""}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            {filterDropdownOpen && (
+              <ul
+                role="listbox"
+                className="absolute left-0 right-0 top-full z-50 mt-2 max-h-64 overflow-auto rounded-xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
+              >
+                <li role="option" aria-selected={dateFilter === "daily"}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDateFilter("daily");
+                      setFilterDropdownOpen(false);
+                    }}
+                    className={`w-full px-4 py-3 text-left text-sm transition-colors ${
+                      dateFilter === "daily"
+                        ? "bg-zinc-100 font-medium text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50"
+                        : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800/50"
+                    }`}
+                  >
+                    Diario
+                  </button>
+                </li>
+                <li role="option" aria-selected={dateFilter === "weekly"}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDateFilter("weekly");
+                      setFilterDropdownOpen(false);
+                    }}
+                    className={`w-full px-4 py-3 text-left text-sm transition-colors ${
+                      dateFilter === "weekly"
+                        ? "bg-zinc-100 font-medium text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50"
+                        : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800/50"
+                    }`}
+                  >
+                    Semanal
+                  </button>
+                </li>
+                <li role="option" aria-selected={dateFilter === "monthly"}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDateFilter("monthly");
+                      setFilterDropdownOpen(false);
+                    }}
+                    className={`w-full px-4 py-3 text-left text-sm transition-colors ${
+                      dateFilter === "monthly"
+                        ? "bg-zinc-100 font-medium text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50"
+                        : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800/50"
+                    }`}
+                  >
+                    Mensual
+                  </button>
+                </li>
+                <li role="option" aria-selected={dateFilter === "yearly"}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDateFilter("yearly");
+                      setFilterDropdownOpen(false);
+                    }}
+                    className={`w-full px-4 py-3 text-left text-sm transition-colors ${
+                      dateFilter === "yearly"
+                        ? "bg-zinc-100 font-medium text-zinc-900 dark:bg-zinc-800 dark:text-zinc-50"
+                        : "text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800/50"
+                    }`}
+                  >
+                    Anual
+                  </button>
+                </li>
+              </ul>
+            )}
+          </div>
+
+          <div className="relative flex-1 tablet:max-w-sm">
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 transition-all hover:border-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-50 dark:hover:border-zinc-500 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-60 [&::-webkit-calendar-picker-indicator]:hover:opacity-100"
+              aria-label="Seleccionar fecha"
+            />
+          </div>
+        </div>
+
+        <div className="mt-6 flex items-center justify-between rounded-xl border border-zinc-200/80 bg-zinc-50/50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800/50">
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+              Total de pagos mostrados
+            </span>
+            <span className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
+              {formatAmount(getTotalAmount())}
+            </span>
+          </div>
+          <div className="text-right">
+            <span className="text-sm text-zinc-600 dark:text-zinc-400">
+              {payments.length} {payments.length === 1 ? "pago" : "pagos"}
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 tablet:p-8">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
             {editingPayment ? "Editar pago" : "Registrar pago"}
