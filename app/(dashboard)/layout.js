@@ -172,6 +172,7 @@ export default function DashboardLayout({ children }) {
   const pathname = usePathname();
   const breakpoint = useBreakpoint();
   const isMobile = breakpoint === "mobile";
+  const isTablet = breakpoint === "tablet";
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
@@ -278,7 +279,7 @@ export default function DashboardLayout({ children }) {
       {/* Main content */}
       <main className="flex-1 overflow-auto tablet:min-w-0">
         <div
-          className={`p-4 tablet:p-6 desktop:p-8 desktop:max-w-7xl ${isMobile ? "pt-14" : ""}`}
+          className={`p-4 tablet:p-6 desktop:p-8 desktop:max-w-7xl ${isMobile ? "pt-20" : ""} ${isTablet ? "pt-10" : ""}`}
         >
           {children}
         </div>
