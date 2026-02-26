@@ -50,37 +50,50 @@ export function ClientsView({ initialClients, fetchError }) {
   const [linkError, setLinkError] = useState(null);
   const [isLinking, setIsLinking] = useState(false);
   const [unlinkingReceiptId, setUnlinkingReceiptId] = useState(null);
+  const [pendingServices, setPendingServices] = useState([]);
 
   const isEditing = formOpen && formOpen !== "create";
 
   useEffect(() => {
-    if (!isEditing || !formOpen?.id) {
+    if (!formOpen) {
       setServicesList([]);
       setClientReceipts([]);
       return;
     }
     let cancelled = false;
     setServicesLoading(true);
-    Promise.all([
-      getServicesListAction(),
-      getClientReceiptsAction(formOpen.id),
-    ]).then(([servicesRes, receiptsRes]) => {
-      if (cancelled) return;
-      setServicesLoading(false);
-      if (servicesRes.error) return;
-      if (receiptsRes.error) return;
-      setServicesList(servicesRes.services ?? []);
-      setClientReceipts(receiptsRes.receipts ?? []);
-    });
+    
+    if (isEditing && formOpen?.id) {
+      Promise.all([
+        getServicesListAction(),
+        getClientReceiptsAction(formOpen.id),
+      ]).then(([servicesRes, receiptsRes]) => {
+        if (cancelled) return;
+        setServicesLoading(false);
+        if (servicesRes.error) return;
+        if (receiptsRes.error) return;
+        setServicesList(servicesRes.services ?? []);
+        setClientReceipts(receiptsRes.receipts ?? []);
+      });
+    } else {
+      getServicesListAction().then((servicesRes) => {
+        if (cancelled) return;
+        setServicesLoading(false);
+        if (servicesRes.error) return;
+        setServicesList(servicesRes.services ?? []);
+      });
+    }
+    
     return () => {
       cancelled = true;
     };
-  }, [isEditing, formOpen?.id]);
+  }, [isEditing, formOpen?.id, formOpen]);
 
   const openCreate = useCallback(() => {
     setFormOpen("create");
     setFormData(EMPTY_FORM);
     setFormError(null);
+    setPendingServices([]);
   }, []);
 
   const openEdit = useCallback((client) => {
@@ -100,6 +113,7 @@ export function ClientsView({ initialClients, fetchError }) {
     setFormError(null);
     setLinkForm({ serviceId: null, accountNumber: "" });
     setLinkError(null);
+    setPendingServices([]);
   }, []);
 
   const getReceiptsForService = useCallback(
@@ -107,6 +121,38 @@ export function ClientsView({ initialClients, fetchError }) {
       clientReceipts.filter((r) => r.service_id === serviceId),
     [clientReceipts]
   );
+
+  const getPendingServicesForService = useCallback(
+    (serviceId) =>
+      pendingServices.filter((s) => s.service_id === serviceId),
+    [pendingServices]
+  );
+
+  const handleAddPendingService = (e, serviceId) => {
+    e.preventDefault();
+    const accountNumber =
+      serviceId === linkForm.serviceId
+        ? linkForm.accountNumber?.trim()
+        : "";
+    if (!serviceId || !accountNumber) {
+      setLinkError("El número de cuenta/recibo es requerido.");
+      return;
+    }
+    setLinkError(null);
+    setPendingServices((prev) => [
+      ...prev,
+      {
+        id: `temp-${Date.now()}-${Math.random()}`,
+        service_id: serviceId,
+        account_receipt_number: accountNumber,
+      },
+    ]);
+    setLinkForm({ serviceId: null, accountNumber: "" });
+  };
+
+  const handleRemovePendingService = (tempId) => {
+    setPendingServices((prev) => prev.filter((s) => s.id !== tempId));
+  };
 
   const handleLinkService = async (e, serviceId) => {
     e.preventDefault();
@@ -165,11 +211,24 @@ export function ClientsView({ initialClients, fetchError }) {
     }
 
     const result = await createClientAction(formData);
-    setIsSubmitting(false);
     if (result.error) {
+      setIsSubmitting(false);
       setFormError(result.error);
       return;
     }
+
+    if (pendingServices.length > 0 && result.data?.id) {
+      const linkPromises = pendingServices.map((service) =>
+        createReceiptAction({
+          client_id: result.data.id,
+          service_id: service.service_id,
+          account_receipt_number: service.account_receipt_number,
+        })
+      );
+      await Promise.all(linkPromises);
+    }
+
+    setIsSubmitting(false);
     closeForm();
     router.refresh();
   };
@@ -478,133 +537,244 @@ export function ClientsView({ initialClients, fetchError }) {
               </div>
               </div>
 
-              {isEditing && (
-                <div className="border-t border-zinc-200/80 pt-5 dark:border-zinc-700">
-                  <h3 className="mb-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                    Servicios
-                  </h3>
-                  <p className="mb-4 text-xs text-zinc-500 dark:text-zinc-400">
-                    Vincular o desvincular servicios. Puedes agregar múltiples cuentas por
-                    servicio (ej. dos cuentas de Claro con diferentes
-                    números de cuenta/recibo).
-                  </p>
-                  {servicesLoading ? (
-                    <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                      Cargando servicios…
+              <div className="border-t border-zinc-200/80 pt-5 dark:border-zinc-700">
+                <h3 className="mb-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+                  Servicios
+                </h3>
+                {!isEditing ? (
+                  <>
+                    <p className="mb-4 text-xs text-zinc-500 dark:text-zinc-400">
+                      Agrega servicios que se vincularán automáticamente al crear el cliente.
                     </p>
-                  ) : servicesList.length === 0 ? (
-                    <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                      Aún no hay servicios definidos. Agrega servicios en la
-                      sección de Servicios primero.
-                    </p>
-                  ) : (
-                    <ul className="grid grid-cols-1 gap-3 tablet:grid-cols-2" role="list">
-                      {servicesList.map((service) => {
-                        const receipts = getReceiptsForService(service.id);
-                        return (
-                          <li
-                            key={service.id}
-                            className="flex flex-col gap-2 rounded-xl border border-zinc-200/80 bg-zinc-50/50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800/50"
-                          >
-                            <span className="font-medium text-zinc-900 dark:text-zinc-50">
-                              {service.name}
-                            </span>
-                            {receipts.length > 0 && (
-                              <ul className="space-y-1.5" role="list">
-                                {receipts.map((receipt) => {
-                                  const isUnlinking =
-                                    unlinkingReceiptId === receipt.id;
-                                  return (
+                    {servicesLoading ? (
+                      <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                        Cargando servicios…
+                      </p>
+                    ) : servicesList.length === 0 ? (
+                      <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                        Aún no hay servicios definidos. Agrega servicios en la
+                        sección de Servicios primero.
+                      </p>
+                    ) : (
+                      <ul className="grid grid-cols-1 gap-3 tablet:grid-cols-2" role="list">
+                        {servicesList.map((service) => {
+                          const pendingForService = getPendingServicesForService(service.id);
+                          return (
+                            <li
+                              key={service.id}
+                              className="flex flex-col gap-2 rounded-xl border border-zinc-200/80 bg-zinc-50/50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800/50"
+                            >
+                              <span className="font-medium text-zinc-900 dark:text-zinc-50">
+                                {service.name}
+                              </span>
+                              {pendingForService.length > 0 && (
+                                <ul className="space-y-1.5" role="list">
+                                  {pendingForService.map((pending) => (
                                     <li
-                                      key={receipt.id}
+                                      key={pending.id}
                                       className="flex items-center justify-between gap-2 rounded-lg border border-zinc-200/80 bg-white px-3 py-2 dark:border-zinc-600 dark:bg-zinc-800"
                                     >
                                       <span className="truncate text-xs text-zinc-700 dark:text-zinc-300">
-                                        {receipt.account_receipt_number}
+                                        {pending.account_receipt_number}
                                       </span>
                                       <button
                                         type="button"
-                                        onClick={() =>
-                                          handleUnlinkReceipt(receipt.id)
-                                        }
-                                        disabled={isUnlinking}
-                                        className="shrink-0 text-xs font-medium text-red-600 hover:underline disabled:opacity-50 dark:text-red-400"
-                                        aria-label={`Eliminar ${receipt.account_receipt_number}`}
+                                        onClick={() => handleRemovePendingService(pending.id)}
+                                        className="shrink-0 text-xs font-medium text-red-600 hover:underline dark:text-red-400"
+                                        aria-label={`Eliminar ${pending.account_receipt_number}`}
                                       >
-                                        {isUnlinking ? "…" : "Desvincular"}
+                                        Quitar
                                       </button>
                                     </li>
-                                  );
-                                })}
-                              </ul>
-                            )}
-                            <div className="flex gap-2">
-                              <input
-                                type="text"
-                                placeholder="Número de cuenta/recibo"
-                                value={
-                                  linkForm.serviceId === service.id
-                                    ? linkForm.accountNumber
-                                    : ""
-                                }
-                                onChange={(e) =>
-                                  setLinkForm({
-                                    serviceId: service.id,
-                                    accountNumber: e.target.value,
-                                  })
-                                }
-                                onFocus={() =>
-                                  setLinkForm((prev) =>
-                                    prev.serviceId === service.id
-                                      ? prev
-                                      : {
-                                          serviceId: service.id,
-                                          accountNumber: "",
-                                        }
-                                  )
-                                }
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") {
-                                    e.preventDefault();
-                                    handleLinkService(e, service.id);
+                                  ))}
+                                </ul>
+                              )}
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  placeholder="Número de cuenta/recibo"
+                                  value={
+                                    linkForm.serviceId === service.id
+                                      ? linkForm.accountNumber
+                                      : ""
                                   }
-                                }}
-                                disabled={isLinking}
-                                className="min-w-0 flex-1 rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-emerald-400 dark:focus:ring-emerald-500/30"
-                                aria-label={`Número de cuenta/recibo para ${service.name}`}
-                              />
-                              <button
-                                type="button"
-                                onClick={(e) =>
-                                  handleLinkService(e, service.id)
-                                }
-                                disabled={
-                                  isLinking ||
-                                  (linkForm.serviceId !== service.id
-                                    ? true
-                                    : !linkForm.accountNumber?.trim())
-                                }
-                                className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50 dark:bg-emerald-500 dark:hover:bg-emerald-600"
-                                aria-label={`Agregar cuenta de ${service.name}`}
-                              >
-                                {receipts.length === 0 ? "Vincular" : "Agregar"}
-                              </button>
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                  {linkError && (
-                    <div
-                      role="alert"
-                      className="mt-3 rounded-xl bg-red-50 px-4 py-2.5 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300"
-                    >
-                      {linkError}
-                    </div>
-                  )}
-                </div>
-              )}
+                                  onChange={(e) =>
+                                    setLinkForm({
+                                      serviceId: service.id,
+                                      accountNumber: e.target.value,
+                                    })
+                                  }
+                                  onFocus={() =>
+                                    setLinkForm((prev) =>
+                                      prev.serviceId === service.id
+                                        ? prev
+                                        : {
+                                            serviceId: service.id,
+                                            accountNumber: "",
+                                          }
+                                    )
+                                  }
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                      e.preventDefault();
+                                      handleAddPendingService(e, service.id);
+                                    }
+                                  }}
+                                  className="min-w-0 flex-1 rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-emerald-400 dark:focus:ring-emerald-500/30"
+                                  aria-label={`Número de cuenta/recibo para ${service.name}`}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleAddPendingService(e, service.id)}
+                                  disabled={
+                                    linkForm.serviceId !== service.id ||
+                                    !linkForm.accountNumber?.trim()
+                                  }
+                                  className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50 dark:bg-emerald-500 dark:hover:bg-emerald-600"
+                                  aria-label={`Agregar cuenta de ${service.name}`}
+                                >
+                                  Agregar
+                                </button>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                    {linkError && (
+                      <div
+                        role="alert"
+                        className="mt-3 rounded-xl bg-red-50 px-4 py-2.5 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300"
+                      >
+                        {linkError}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <p className="mb-4 text-xs text-zinc-500 dark:text-zinc-400">
+                      Vincular o desvincular servicios. Puedes agregar múltiples cuentas por
+                      servicio (ej. dos cuentas de Claro con diferentes
+                      números de cuenta/recibo).
+                    </p>
+                    {servicesLoading ? (
+                      <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                        Cargando servicios…
+                      </p>
+                    ) : servicesList.length === 0 ? (
+                      <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                        Aún no hay servicios definidos. Agrega servicios en la
+                        sección de Servicios primero.
+                      </p>
+                    ) : (
+                      <ul className="grid grid-cols-1 gap-3 tablet:grid-cols-2" role="list">
+                        {servicesList.map((service) => {
+                          const receipts = getReceiptsForService(service.id);
+                          return (
+                            <li
+                              key={service.id}
+                              className="flex flex-col gap-2 rounded-xl border border-zinc-200/80 bg-zinc-50/50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800/50"
+                            >
+                              <span className="font-medium text-zinc-900 dark:text-zinc-50">
+                                {service.name}
+                              </span>
+                              {receipts.length > 0 && (
+                                <ul className="space-y-1.5" role="list">
+                                  {receipts.map((receipt) => {
+                                    const isUnlinking =
+                                      unlinkingReceiptId === receipt.id;
+                                    return (
+                                      <li
+                                        key={receipt.id}
+                                        className="flex items-center justify-between gap-2 rounded-lg border border-zinc-200/80 bg-white px-3 py-2 dark:border-zinc-600 dark:bg-zinc-800"
+                                      >
+                                        <span className="truncate text-xs text-zinc-700 dark:text-zinc-300">
+                                          {receipt.account_receipt_number}
+                                        </span>
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            handleUnlinkReceipt(receipt.id)
+                                          }
+                                          disabled={isUnlinking}
+                                          className="shrink-0 text-xs font-medium text-red-600 hover:underline disabled:opacity-50 dark:text-red-400"
+                                          aria-label={`Eliminar ${receipt.account_receipt_number}`}
+                                        >
+                                          {isUnlinking ? "…" : "Desvincular"}
+                                        </button>
+                                      </li>
+                                    );
+                                  })}
+                                </ul>
+                              )}
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  placeholder="Número de cuenta/recibo"
+                                  value={
+                                    linkForm.serviceId === service.id
+                                      ? linkForm.accountNumber
+                                      : ""
+                                  }
+                                  onChange={(e) =>
+                                    setLinkForm({
+                                      serviceId: service.id,
+                                      accountNumber: e.target.value,
+                                    })
+                                  }
+                                  onFocus={() =>
+                                    setLinkForm((prev) =>
+                                      prev.serviceId === service.id
+                                        ? prev
+                                        : {
+                                            serviceId: service.id,
+                                            accountNumber: "",
+                                          }
+                                    )
+                                  }
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                      e.preventDefault();
+                                      handleLinkService(e, service.id);
+                                    }
+                                  }}
+                                  disabled={isLinking}
+                                  className="min-w-0 flex-1 rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-emerald-400 dark:focus:ring-emerald-500/30"
+                                  aria-label={`Número de cuenta/recibo para ${service.name}`}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={(e) =>
+                                    handleLinkService(e, service.id)
+                                  }
+                                  disabled={
+                                    isLinking ||
+                                    (linkForm.serviceId !== service.id
+                                      ? true
+                                      : !linkForm.accountNumber?.trim())
+                                  }
+                                  className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50 dark:bg-emerald-500 dark:hover:bg-emerald-600"
+                                  aria-label={`Agregar cuenta de ${service.name}`}
+                                >
+                                  {receipts.length === 0 ? "Vincular" : "Agregar"}
+                                </button>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                    {linkError && (
+                      <div
+                        role="alert"
+                        className="mt-3 rounded-xl bg-red-50 px-4 py-2.5 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300"
+                      >
+                        {linkError}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
 
               {formError && (
                 <div
