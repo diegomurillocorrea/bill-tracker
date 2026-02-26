@@ -58,6 +58,11 @@ function getPaymentClientPhone(payment) {
   return client?.phone_number?.trim() ?? "";
 }
 
+function getPaymentMethodName(payment) {
+  const method = payment.payment_methods;
+  return method?.name ?? "—";
+}
+
 /**
  * Normalize phone for wa.me: digits only; if 8 digits assume El Salvador (+503).
  */
@@ -113,7 +118,7 @@ function buildWhatsAppVoucherUrl(payment) {
 const SEARCH_DEBOUNCE_MS = 300;
 const MIN_SEARCH_LENGTH = 2;
 
-export function PaymentsView({ initialPayments, fetchError }) {
+export function PaymentsView({ initialPayments, initialPaymentMethods, fetchError }) {
   const router = useRouter();
   const breakpoint = useBreakpoint();
   const isMobile = breakpoint === "mobile";
@@ -122,6 +127,7 @@ export function PaymentsView({ initialPayments, fetchError }) {
   const [searchLoading, setSearchLoading] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("");
   const [amount, setAmount] = useState("");
   const [formError, setFormError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -135,6 +141,7 @@ export function PaymentsView({ initialPayments, fetchError }) {
   const searchTimeoutRef = useRef(null);
   const comboboxRef = useRef(null);
   const filterDropdownRef = useRef(null);
+  const paymentMethods = initialPaymentMethods ?? [];
 
   const runSearch = useCallback(async (query) => {
     const q = (query ?? "").trim();
@@ -196,6 +203,7 @@ export function PaymentsView({ initialPayments, fetchError }) {
     setEditingPayment(payment);
     setSelectedReceipt({ id: payment.receipt_id, label: getReceiptLabel(receipt) });
     setAmount(String(payment.total_amount));
+    setSelectedPaymentMethod(payment.payment_method_id ?? "");
     setFormError(null);
   }, []);
 
@@ -203,6 +211,7 @@ export function PaymentsView({ initialPayments, fetchError }) {
     setEditingPayment(null);
     setSelectedReceipt(null);
     setAmount("");
+    setSelectedPaymentMethod("");
     setFormError(null);
   }, []);
 
@@ -231,7 +240,8 @@ export function PaymentsView({ initialPayments, fetchError }) {
   }, []);
 
   const getFilteredPayments = useCallback(() => {
-    const referenceDate = new Date(selectedDate);
+    const [year, month, day] = selectedDate.split("-").map(Number);
+    const referenceDate = new Date(year, month - 1, day);
     
     return initialPayments.filter((payment) => {
       const paymentDate = new Date(payment.created_at);
@@ -307,6 +317,10 @@ export function PaymentsView({ initialPayments, fetchError }) {
       setFormError("Ingresa un monto válido (0 o mayor).");
       return;
     }
+    if (!selectedPaymentMethod) {
+      setFormError("Selecciona un método de pago.");
+      return;
+    }
     setIsSubmitting(true);
     
     let result;
@@ -314,11 +328,13 @@ export function PaymentsView({ initialPayments, fetchError }) {
       result = await updatePaymentAction(editingPayment.id, {
         receipt_id: selectedReceipt.id,
         total_amount,
+        payment_method_id: selectedPaymentMethod,
       });
     } else {
       result = await createPaymentAction({
         receipt_id: selectedReceipt.id,
         total_amount,
+        payment_method_id: selectedPaymentMethod,
       });
     }
     
@@ -330,6 +346,7 @@ export function PaymentsView({ initialPayments, fetchError }) {
     setEditingPayment(null);
     setSelectedReceipt(null);
     setAmount("");
+    setSelectedPaymentMethod("");
     router.refresh();
   };
 
@@ -591,6 +608,30 @@ export function PaymentsView({ initialPayments, fetchError }) {
               </>
             )}
           </div>
+          <div className="w-full tablet:w-56">
+            <label
+              htmlFor="payment-method"
+              className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            >
+              Método de pago <span className="text-red-500">*</span>
+            </label>
+            <select
+              id="payment-method"
+              required
+              value={selectedPaymentMethod}
+              onChange={(e) => setSelectedPaymentMethod(e.target.value)}
+              disabled={isSubmitting}
+              className={inputClass}
+              aria-invalid={!!formError}
+            >
+              <option value="">Seleccionar método</option>
+              {paymentMethods.map((method) => (
+                <option key={method.id} value={method.id}>
+                  {method.name}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="w-full tablet:w-40">
             <label
               htmlFor="payment-amount"
@@ -665,6 +706,9 @@ export function PaymentsView({ initialPayments, fetchError }) {
                     <span className="font-medium text-zinc-900 dark:text-zinc-50">
                       {formatAmount(payment.total_amount)}
                     </span>
+                    <span className="text-xs text-zinc-600 dark:text-zinc-400">
+                      {getPaymentMethodName(payment)}
+                    </span>
                     <span className="text-xs text-zinc-500 dark:text-zinc-500">
                       {formatDate(payment.created_at)}
                     </span>
@@ -721,6 +765,9 @@ export function PaymentsView({ initialPayments, fetchError }) {
                     Monto
                   </th>
                   <th className="px-4 py-3.5 font-semibold text-zinc-700 dark:text-zinc-300 tablet:px-6">
+                    Método de pago
+                  </th>
+                  <th className="px-4 py-3.5 font-semibold text-zinc-700 dark:text-zinc-300 tablet:px-6">
                     Fecha
                   </th>
                   <th className="px-4 py-3.5 font-semibold text-zinc-700 dark:text-zinc-300 tablet:px-6">
@@ -742,6 +789,9 @@ export function PaymentsView({ initialPayments, fetchError }) {
                       </td>
                       <td className="px-4 py-3.5 font-medium text-zinc-900 dark:text-zinc-50 tablet:px-6">
                         {formatAmount(payment.total_amount)}
+                      </td>
+                      <td className="px-4 py-3.5 text-zinc-600 dark:text-zinc-400 tablet:px-6">
+                        {getPaymentMethodName(payment)}
                       </td>
                       <td className="px-4 py-3.5 text-zinc-500 dark:text-zinc-500 tablet:px-6">
                         {formatDate(payment.created_at)}

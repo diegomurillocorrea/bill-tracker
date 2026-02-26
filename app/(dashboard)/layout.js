@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { href: "/payments", label: "Pagos" },
   { href: "/clients", label: "Clientes" },
   { href: "/services", label: "Servicios" },
+  { href: "/payment-methods", label: "Métodos de pago" },
 ];
 
 function NavContent({ pathname, onNavClick, hideLogo }) {

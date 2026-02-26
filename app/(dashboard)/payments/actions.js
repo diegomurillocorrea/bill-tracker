@@ -54,12 +54,13 @@ export async function searchReceiptsForPaymentAction(query) {
 }
 
 /**
- * @param {{ receipt_id: string; total_amount: number }} payload
+ * @param {{ receipt_id: string; total_amount: number; payment_method_id: string }} payload
  * @returns {Promise<{ error: string | null }>}
  */
 export async function createPaymentAction(payload) {
   const receipt_id = payload.receipt_id?.trim();
   const total_amount = Number(payload.total_amount);
+  const payment_method_id = payload.payment_method_id?.trim();
 
   if (!receipt_id) {
     return { error: "El recibo es requerido." };
@@ -69,10 +70,15 @@ export async function createPaymentAction(payload) {
     return { error: "El monto debe ser cero o mayor." };
   }
 
+  if (!payment_method_id) {
+    return { error: "El método de pago es requerido." };
+  }
+
   const supabase = await createClient();
   const { error } = await supabase.from("payments").insert({
     receipt_id,
     total_amount,
+    payment_method_id,
   });
 
   if (error) {
@@ -86,7 +92,7 @@ export async function createPaymentAction(payload) {
 
 /**
  * @param {string} id
- * @param {{ receipt_id: string; total_amount: number }} payload
+ * @param {{ receipt_id: string; total_amount: number; payment_method_id: string }} payload
  * @returns {Promise<{ error: string | null }>}
  */
 export async function updatePaymentAction(id, payload) {
@@ -96,6 +102,7 @@ export async function updatePaymentAction(id, payload) {
 
   const receipt_id = payload.receipt_id?.trim();
   const total_amount = Number(payload.total_amount);
+  const payment_method_id = payload.payment_method_id?.trim();
 
   if (!receipt_id) {
     return { error: "El recibo es requerido." };
@@ -105,12 +112,17 @@ export async function updatePaymentAction(id, payload) {
     return { error: "El monto debe ser cero o mayor." };
   }
 
+  if (!payment_method_id) {
+    return { error: "El método de pago es requerido." };
+  }
+
   const supabase = await createClient();
   const { error } = await supabase
     .from("payments")
     .update({
       receipt_id,
       total_amount,
+      payment_method_id,
     })
     .eq("id", id);
 
