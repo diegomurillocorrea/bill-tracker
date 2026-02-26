@@ -461,19 +461,32 @@ export function PaymentsView({ initialPayments, fetchError }) {
           </div>
         </div>
 
-        <div className="mt-6 flex items-center justify-between rounded-xl border border-zinc-200/80 bg-zinc-50/50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800/50">
-          <div className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
-              Total de pagos mostrados
-            </span>
-            <span className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
-              {formatAmount(getTotalAmount())}
-            </span>
+        <div className="mt-6 grid grid-cols-1 gap-4 tablet:grid-cols-2">
+          <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800/50">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                Total de pagos mostrados
+              </span>
+              <span className="text-2xl font-bold text-zinc-900 dark:text-zinc-50">
+                {formatAmount(getTotalAmount())}
+              </span>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                {payments.length} {payments.length === 1 ? "pago" : "pagos"}
+              </span>
+            </div>
           </div>
-          <div className="text-right">
-            <span className="text-sm text-zinc-600 dark:text-zinc-400">
-              {payments.length} {payments.length === 1 ? "pago" : "pagos"}
-            </span>
+          <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800/50">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                Ganancia estimada
+              </span>
+              <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-500">
+                {formatAmount(payments.length)}
+              </span>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                ${payments.length === 1 ? "1.00" : `${payments.length}.00`} en comisiones
+              </span>
+            </div>
           </div>
         </div>
       </section>
