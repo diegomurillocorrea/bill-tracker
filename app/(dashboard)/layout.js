@@ -7,10 +7,9 @@ import { createClient } from "@/lib/supabase/client";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
 
 const NAV_ITEMS = [
-  { href: "/", label: "Resumen" },
+  { href: "/payments", label: "Pagos" },
   { href: "/clients", label: "Clientes" },
   { href: "/services", label: "Servicios" },
-  { href: "/payments", label: "Pagos" },
 ];
 
 function NavContent({ pathname, onNavClick, hideLogo }) {
@@ -19,7 +18,7 @@ function NavContent({ pathname, onNavClick, hideLogo }) {
       {!hideLogo && (
         <div className="flex h-16 items-center border-b border-zinc-200/80 px-5 dark:border-zinc-800">
           <Link
-            href="/"
+            href="/payments"
             onClick={onNavClick}
             className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50"
           >
@@ -209,7 +208,7 @@ export default function DashboardLayout({ children }) {
               </svg>
             </button>
             <Link
-              href="/"
+              href="/payments"
               onClick={closeMobileMenu}
               className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50"
             >
