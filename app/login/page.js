@@ -2,7 +2,6 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
 function LoginForm() {
@@ -135,16 +134,6 @@ function LoginForm() {
             {isLoading ? "Signing in…" : "Sign in"}
           </button>
         </form>
-
-        <p className="mt-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
-          Don&apos;t have an account?{" "}
-          <Link
-            href="/signup"
-            className="font-medium text-emerald-600 underline-offset-2 hover:underline dark:text-emerald-400"
-          >
-            Sign up
-          </Link>
-        </p>
       </main>
     </div>
   );
