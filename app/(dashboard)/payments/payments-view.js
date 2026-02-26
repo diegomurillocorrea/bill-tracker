@@ -89,15 +89,21 @@ function buildWhatsAppVoucherUrl(payment) {
       : "Cliente";
   const serviceName = service?.name ?? "—";
   const account = receipt?.account_receipt_number ?? "";
-  const amount = formatAmount(payment.total_amount);
+  const invoiceAmount = Number(payment.total_amount) || 0;
+  const serviceFee = 1;
+  const total = invoiceAmount + serviceFee;
   const date = formatDate(payment.created_at);
 
   const message = [
-    "Comprobante de pago",
-    "—",
+    "———————————————",
+    "     Comprobante de pago",
+    "———————————————",
+    `Número de Comprobante: ${payment.id}`,
     `Cliente: ${clientName}`,
-    `Servicio: ${serviceName}${account ? ` (${account})` : ""}`,
-    `Monto: ${amount}`,
+    `Servicio: ${serviceName}${account ? ` ${account}` : ""}`,
+    `Monto Factura: ${formatAmount(invoiceAmount)}`,
+    `Costo por Servicio: ${formatAmount(serviceFee)}`,
+    `Total: ${formatAmount(total)}`,
     `Fecha: ${date}`,
   ].join("\n");
 
