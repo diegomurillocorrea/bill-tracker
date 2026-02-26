@@ -111,20 +111,20 @@ export function ServicesView({ initialServices, fetchError }) {
       <header className="flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 tablet:text-3xl">
-            Services
+            Servicios
           </h1>
           <p className="mt-1.5 text-sm text-zinc-600 dark:text-zinc-400 tablet:text-base">
-            Bill types (e.g. Water, Electrical Power, Internet). Add, edit, or
-            remove services.
+            Tipos de recibos (ej. Agua, Electricidad, Internet). Agregar, editar o
+            eliminar servicios.
           </p>
         </div>
         <button
           type="button"
           onClick={openCreate}
           className="inline-flex h-11 min-w-[10rem] items-center justify-center rounded-xl bg-emerald-600 px-5 text-sm font-medium text-white transition-all duration-200 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:focus:ring-offset-zinc-900"
-          aria-label="Add service"
+          aria-label="Agregar servicio"
         >
-          Add service
+          Agregar servicio
         </button>
       </header>
 
@@ -140,23 +140,23 @@ export function ServicesView({ initialServices, fetchError }) {
       <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <div className="border-b border-zinc-200/80 bg-zinc-50/50 px-4 py-3.5 dark:border-zinc-800 dark:bg-zinc-800/30 tablet:px-6">
           <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-            Service list
+            Lista de servicios
           </h2>
         </div>
 
         {services.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-5 px-4 py-20 text-center">
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              No services yet. Add your first service (e.g. Water, Electrical
-              Power, Internet) to get started.
+              Aún no hay servicios. Agrega tu primer servicio (ej. Agua, Electricidad,
+              Internet) para comenzar.
             </p>
             <button
               type="button"
               onClick={openCreate}
               className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-5 text-sm font-medium text-white transition-all hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600"
-              aria-label="Add service"
+              aria-label="Agregar servicio"
             >
-              Add service
+              Agregar servicio
             </button>
           </div>
         ) : isMobile ? (
@@ -179,17 +179,17 @@ export function ServicesView({ initialServices, fetchError }) {
                     type="button"
                     onClick={() => openEdit(service)}
                     className="text-sm font-medium text-emerald-600 underline-offset-2 hover:underline dark:text-emerald-400"
-                    aria-label={`Edit ${service.name}`}
+                    aria-label={`Editar ${service.name}`}
                   >
-                    Edit
+                    Editar
                   </button>
                   <button
                     type="button"
                     onClick={() => handleDeleteClick(service)}
                     className="text-sm font-medium text-red-600 underline-offset-2 hover:underline dark:text-red-400"
-                    aria-label={`Delete ${service.name}`}
+                    aria-label={`Eliminar ${service.name}`}
                   >
-                    Delete
+                    Eliminar
                   </button>
                 </div>
               </li>
@@ -201,13 +201,13 @@ export function ServicesView({ initialServices, fetchError }) {
               <thead>
                 <tr className="border-b border-zinc-200/80 dark:border-zinc-800">
                   <th className="px-4 py-3.5 font-semibold text-zinc-700 dark:text-zinc-300 tablet:px-6">
-                    Name
+                    Nombre
                   </th>
                   <th className="px-4 py-3.5 font-semibold text-zinc-700 dark:text-zinc-300 tablet:px-6">
-                    Created
+                    Creado
                   </th>
                   <th className="px-4 py-3.5 font-semibold text-zinc-700 dark:text-zinc-300 tablet:px-6">
-                    <span className="sr-only">Actions</span>
+                    <span className="sr-only">Acciones</span>
                   </th>
                 </tr>
               </thead>
@@ -229,17 +229,17 @@ export function ServicesView({ initialServices, fetchError }) {
                           type="button"
                           onClick={() => openEdit(service)}
                           className="font-medium text-emerald-600 underline-offset-2 hover:underline dark:text-emerald-400"
-                          aria-label={`Edit ${service.name}`}
+                          aria-label={`Editar ${service.name}`}
                         >
-                          Edit
+                          Editar
                         </button>
                         <button
                           type="button"
                           onClick={() => handleDeleteClick(service)}
                           className="font-medium text-red-600 underline-offset-2 hover:underline dark:text-red-400"
-                          aria-label={`Delete ${service.name}`}
+                          aria-label={`Eliminar ${service.name}`}
                         >
-                          Delete
+                          Eliminar
                         </button>
                       </div>
                     </td>
@@ -267,7 +267,7 @@ export function ServicesView({ initialServices, fetchError }) {
               id="service-form-title"
               className="text-xl font-bold text-zinc-900 dark:text-zinc-50"
             >
-              {isEditing ? "Edit service" : "Add service"}
+              {isEditing ? "Editar servicio" : "Agregar servicio"}
             </h2>
             <form
               onSubmit={handleFormSubmit}
@@ -278,7 +278,7 @@ export function ServicesView({ initialServices, fetchError }) {
                   htmlFor="service-name"
                   className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
                 >
-                  Name <span className="text-red-500">*</span>
+                  Nombre <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="service-name"
@@ -305,22 +305,22 @@ export function ServicesView({ initialServices, fetchError }) {
                   onClick={closeForm}
                   disabled={isSubmitting}
                   className="flex-1 rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-700 transition-all hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                  aria-label="Cancel"
+                  aria-label="Cancelar"
                 >
-                  Cancel
+                  Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
                   className="flex-1 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-medium text-white transition-all hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:focus:ring-offset-zinc-900"
                   aria-busy={isSubmitting}
-                  aria-label={isEditing ? "Save changes" : "Create service"}
+                  aria-label={isEditing ? "Guardar cambios" : "Crear servicio"}
                 >
                   {isSubmitting
-                    ? "Saving…"
+                    ? "Guardando…"
                     : isEditing
-                      ? "Save"
-                      : "Create"}
+                      ? "Guardar"
+                      : "Crear"}
                 </button>
               </div>
             </form>
@@ -342,14 +342,14 @@ export function ServicesView({ initialServices, fetchError }) {
               id="delete-dialog-title"
               className="text-xl font-bold text-zinc-900 dark:text-zinc-50"
             >
-              Delete service
+              Eliminar servicio
             </h2>
             <p
               id="delete-dialog-desc"
               className="mt-2 text-sm text-zinc-600 dark:text-zinc-400"
             >
-              Are you sure you want to delete{" "}
-              <strong>{deleteTarget.name}</strong>? This cannot be undone.
+              ¿Estás seguro de que deseas eliminar{" "}
+              <strong>{deleteTarget.name}</strong>? Esta acción no se puede deshacer.
             </p>
             {deleteError && (
               <div
@@ -365,9 +365,9 @@ export function ServicesView({ initialServices, fetchError }) {
                 onClick={handleDeleteCancel}
                 disabled={isDeleting}
                 className="flex-1 rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-700 transition-all hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                aria-label="Cancel"
+                aria-label="Cancelar"
               >
-                Cancel
+                Cancelar
               </button>
               <button
                 type="button"
@@ -375,9 +375,9 @@ export function ServicesView({ initialServices, fetchError }) {
                 disabled={isDeleting}
                 className="flex-1 rounded-xl bg-red-600 px-4 py-3 text-sm font-medium text-white transition-all hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 dark:focus:ring-offset-zinc-900"
                 aria-busy={isDeleting}
-                aria-label="Delete service"
+                aria-label="Eliminar servicio"
               >
-                {isDeleting ? "Deleting…" : "Delete"}
+                {isDeleting ? "Eliminando…" : "Eliminar"}
               </button>
             </div>
           </div>

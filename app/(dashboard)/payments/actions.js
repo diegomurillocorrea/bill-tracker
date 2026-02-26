@@ -62,11 +62,11 @@ export async function createPaymentAction(payload) {
   const total_amount = Number(payload.total_amount);
 
   if (!receipt_id) {
-    return { error: "Receipt is required." };
+    return { error: "El recibo es requerido." };
   }
 
   if (Number.isNaN(total_amount) || total_amount < 0) {
-    return { error: "Amount must be zero or greater." };
+    return { error: "El monto debe ser cero o mayor." };
   }
 
   const supabase = await createClient();

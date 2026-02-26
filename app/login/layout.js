@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Login",
+  title: "Iniciar Sesión",
 };
 
 export default function LoginLayout({ children }) {

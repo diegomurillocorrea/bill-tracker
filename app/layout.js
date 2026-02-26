@@ -13,15 +13,15 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   title: {
-    default: "Bill Tracker",
-    template: "Bill Tracker | %s",
+    default: "Gestor de Recibos",
+    template: "Gestor de Recibos | %s",
   },
-  description: "Admin app for managing water, electrical power, and internet bills.",
+  description: "Aplicación de administración para gestionar recibos de agua, electricidad e internet.",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="es">
       <body
         className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased min-h-screen`}
       >

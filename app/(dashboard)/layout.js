@@ -7,10 +7,10 @@ import { createClient } from "@/lib/supabase/client";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
 
 const NAV_ITEMS = [
-  { href: "/", label: "Overview" },
-  { href: "/clients", label: "Clients" },
-  { href: "/services", label: "Services" },
-  { href: "/payments", label: "Payments" },
+  { href: "/", label: "Resumen" },
+  { href: "/clients", label: "Clientes" },
+  { href: "/services", label: "Servicios" },
+  { href: "/payments", label: "Pagos" },
 ];
 
 function NavContent({ pathname, onNavClick, hideLogo }) {
@@ -23,7 +23,7 @@ function NavContent({ pathname, onNavClick, hideLogo }) {
             onClick={onNavClick}
             className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50"
           >
-            Bill Tracker
+            Gestor de Recibos
           </Link>
         </div>
       )}
@@ -69,9 +69,9 @@ function SignOutButton() {
       type="button"
       onClick={handleSignOut}
       className="w-full rounded-xl px-4 py-3 text-left text-sm font-medium text-zinc-600 transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:ring-offset-2 dark:text-zinc-400 dark:hover:bg-zinc-800/80 dark:hover:text-zinc-50 dark:focus:ring-offset-zinc-900"
-      aria-label="Sign out"
+      aria-label="Cerrar sesión"
     >
-      Sign out
+      Cerrar sesión
     </button>
   );
 }
@@ -96,7 +96,7 @@ export default function DashboardLayout({ children }) {
             type="button"
             onClick={() => setMobileMenuOpen(true)}
             className="flex h-10 w-10 items-center justify-center rounded-xl text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:ring-offset-2 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 dark:focus:ring-offset-zinc-900"
-            aria-label="Open menu"
+            aria-label="Abrir menú"
             aria-expanded={mobileMenuOpen}
           >
             <svg
@@ -119,7 +119,7 @@ export default function DashboardLayout({ children }) {
             onClick={closeMobileMenu}
             className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-50"
           >
-            Bill Tracker
+            Gestor de Recibos
           </Link>
         </header>
       )}
@@ -130,7 +130,7 @@ export default function DashboardLayout({ children }) {
           type="button"
           onClick={closeMobileMenu}
           className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity duration-200"
-          aria-label="Close menu"
+          aria-label="Cerrar menú"
         />
       )}
 
@@ -148,13 +148,13 @@ export default function DashboardLayout({ children }) {
         {isMobile && (
           <div className="flex h-14 items-center justify-between border-b border-zinc-200/80 px-4 dark:border-zinc-800">
             <span className="text-base font-semibold text-zinc-900 dark:text-zinc-50">
-              Menu
+              Menú
             </span>
             <button
               type="button"
               onClick={closeMobileMenu}
               className="flex h-10 w-10 items-center justify-center rounded-xl text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-50"
-              aria-label="Close menu"
+              aria-label="Cerrar menú"
             >
               <svg
                 className="h-6 w-6"

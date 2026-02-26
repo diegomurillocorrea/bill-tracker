@@ -115,7 +115,7 @@ export function ClientsView({ initialClients, fetchError }) {
         ? linkForm.accountNumber?.trim()
         : "";
     if (!isEditing || !serviceId || !accountNumber) {
-      setLinkError("Account/receipt number is required.");
+      setLinkError("El número de cuenta/recibo es requerido.");
       return;
     }
     setLinkError(null);
@@ -206,19 +206,19 @@ export function ClientsView({ initialClients, fetchError }) {
       <header className="flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 tablet:text-3xl">
-            Clients
+            Clientes
           </h1>
           <p className="mt-1.5 text-sm text-zinc-600 dark:text-zinc-400 tablet:text-base">
-            View and manage clients. Add or edit clients and assign services.
+            Ver y gestionar clientes. Agregar o editar clientes y asignar servicios.
           </p>
         </div>
         <button
           type="button"
           onClick={openCreate}
           className="inline-flex h-11 min-w-[10rem] items-center justify-center rounded-xl bg-emerald-600 px-5 text-sm font-medium text-white transition-all duration-200 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:focus:ring-offset-zinc-900"
-          aria-label="Add client"
+          aria-label="Agregar cliente"
         >
-          Add client
+          Agregar cliente
         </button>
       </header>
 
@@ -234,22 +234,22 @@ export function ClientsView({ initialClients, fetchError }) {
       <div className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <div className="border-b border-zinc-200/80 bg-zinc-50/50 px-4 py-3.5 dark:border-zinc-800 dark:bg-zinc-800/30 tablet:px-6">
           <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-            Client list
+            Lista de clientes
           </h2>
         </div>
 
         {clients.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-5 px-4 py-20 text-center">
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              No clients yet. Add your first client to get started.
+              Aún no hay clientes. Agrega tu primer cliente para comenzar.
             </p>
             <button
               type="button"
               onClick={openCreate}
               className="inline-flex h-11 items-center justify-center rounded-xl bg-emerald-600 px-5 text-sm font-medium text-white transition-all hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600"
-              aria-label="Add client"
+              aria-label="Agregar cliente"
             >
-              Add client
+              Agregar cliente
             </button>
           </div>
         ) : isMobile ? (
@@ -280,17 +280,17 @@ export function ClientsView({ initialClients, fetchError }) {
                     type="button"
                     onClick={() => openEdit(client)}
                     className="text-sm font-medium text-emerald-600 underline-offset-2 hover:underline dark:text-emerald-400"
-                    aria-label={`Edit ${client.name} ${client.last_name}`}
+                    aria-label={`Editar ${client.name} ${client.last_name}`}
                   >
-                    Edit
+                    Editar
                   </button>
                   <button
                     type="button"
                     onClick={() => handleDeleteClick(client)}
                     className="text-sm font-medium text-red-600 underline-offset-2 hover:underline dark:text-red-400"
-                    aria-label={`Delete ${client.name} ${client.last_name}`}
+                    aria-label={`Eliminar ${client.name} ${client.last_name}`}
                   >
-                    Delete
+                    Eliminar
                   </button>
                 </div>
               </li>
@@ -302,22 +302,22 @@ export function ClientsView({ initialClients, fetchError }) {
               <thead>
                 <tr className="border-b border-zinc-200/80 dark:border-zinc-800">
                   <th className="px-4 py-3.5 font-semibold text-zinc-700 dark:text-zinc-300 tablet:px-6">
-                    Name
+                    Nombre
                   </th>
                   <th className="px-4 py-3.5 font-semibold text-zinc-700 dark:text-zinc-300 tablet:px-6">
-                    Last name
+                    Apellido
                   </th>
                   <th className="px-4 py-3.5 font-semibold text-zinc-700 dark:text-zinc-300 tablet:px-6">
-                    Phone
+                    Teléfono
                   </th>
                   <th className="px-4 py-3.5 font-semibold text-zinc-700 dark:text-zinc-300 tablet:px-6">
-                    Reference
+                    Referencia
                   </th>
                   <th className="px-4 py-3.5 font-semibold text-zinc-700 dark:text-zinc-300 tablet:px-6">
-                    Created
+                    Creado
                   </th>
                   <th className="px-4 py-3.5 font-semibold text-zinc-700 dark:text-zinc-300 tablet:px-6">
-                    <span className="sr-only">Actions</span>
+                    <span className="sr-only">Acciones</span>
                   </th>
                 </tr>
               </thead>
@@ -348,17 +348,17 @@ export function ClientsView({ initialClients, fetchError }) {
                           type="button"
                           onClick={() => openEdit(client)}
                           className="font-medium text-emerald-600 underline-offset-2 hover:underline dark:text-emerald-400"
-                          aria-label={`Edit ${client.name} ${client.last_name}`}
+                          aria-label={`Editar ${client.name} ${client.last_name}`}
                         >
-                          Edit
+                          Editar
                         </button>
                         <button
                           type="button"
                           onClick={() => handleDeleteClick(client)}
                           className="font-medium text-red-600 underline-offset-2 hover:underline dark:text-red-400"
-                          aria-label={`Delete ${client.name} ${client.last_name}`}
+                          aria-label={`Eliminar ${client.name} ${client.last_name}`}
                         >
-                          Delete
+                          Eliminar
                         </button>
                       </div>
                     </td>
@@ -383,7 +383,7 @@ export function ClientsView({ initialClients, fetchError }) {
             onKeyDown={(e) => e.key === "Escape" && closeForm()}
           >
             <h2 id="client-form-title" className="shrink-0 text-xl font-bold text-zinc-900 dark:text-zinc-50">
-              {isEditing ? "Edit client" : "Add client"}
+              {isEditing ? "Editar cliente" : "Agregar cliente"}
             </h2>
             <div className="min-h-0 flex-1 overflow-y-auto mt-6 -mr-2 pr-2 tablet:mr-0 tablet:pr-0">
             <form
@@ -396,7 +396,7 @@ export function ClientsView({ initialClients, fetchError }) {
                   htmlFor="client-name"
                   className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
                 >
-                  Name <span className="text-red-500">*</span>
+                  Nombre <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="client-name"
@@ -416,7 +416,7 @@ export function ClientsView({ initialClients, fetchError }) {
                   htmlFor="client-last-name"
                   className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
                 >
-                  Last name <span className="text-red-500">*</span>
+                  Apellido <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="client-last-name"
@@ -439,7 +439,7 @@ export function ClientsView({ initialClients, fetchError }) {
                   htmlFor="client-phone"
                   className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
                 >
-                  Phone number
+                  Número de teléfono
                 </label>
                 <input
                   id="client-phone"
@@ -460,7 +460,7 @@ export function ClientsView({ initialClients, fetchError }) {
                   htmlFor="client-reference"
                   className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
                 >
-                  Reference
+                  Referencia
                 </label>
                 <input
                   id="client-reference"
@@ -481,21 +481,21 @@ export function ClientsView({ initialClients, fetchError }) {
               {isEditing && (
                 <div className="border-t border-zinc-200/80 pt-5 dark:border-zinc-700">
                   <h3 className="mb-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                    Services
+                    Servicios
                   </h3>
                   <p className="mb-4 text-xs text-zinc-500 dark:text-zinc-400">
-                    Link or unlink services. You can add multiple accounts per
-                    service (e.g. two Claro accounts with different
-                    account/receipt numbers).
+                    Vincular o desvincular servicios. Puedes agregar múltiples cuentas por
+                    servicio (ej. dos cuentas de Claro con diferentes
+                    números de cuenta/recibo).
                   </p>
                   {servicesLoading ? (
                     <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                      Loading services…
+                      Cargando servicios…
                     </p>
                   ) : servicesList.length === 0 ? (
                     <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                      No services defined yet. Add services in the Services
-                      section first.
+                      Aún no hay servicios definidos. Agrega servicios en la
+                      sección de Servicios primero.
                     </p>
                   ) : (
                     <ul className="grid grid-cols-1 gap-3 tablet:grid-cols-2" role="list">
@@ -529,9 +529,9 @@ export function ClientsView({ initialClients, fetchError }) {
                                         }
                                         disabled={isUnlinking}
                                         className="shrink-0 text-xs font-medium text-red-600 hover:underline disabled:opacity-50 dark:text-red-400"
-                                        aria-label={`Remove ${receipt.account_receipt_number}`}
+                                        aria-label={`Eliminar ${receipt.account_receipt_number}`}
                                       >
-                                        {isUnlinking ? "…" : "Unlink"}
+                                        {isUnlinking ? "…" : "Desvincular"}
                                       </button>
                                     </li>
                                   );
@@ -541,7 +541,7 @@ export function ClientsView({ initialClients, fetchError }) {
                             <div className="flex gap-2">
                               <input
                                 type="text"
-                                placeholder="Account/receipt number"
+                                placeholder="Número de cuenta/recibo"
                                 value={
                                   linkForm.serviceId === service.id
                                     ? linkForm.accountNumber
@@ -571,7 +571,7 @@ export function ClientsView({ initialClients, fetchError }) {
                                 }}
                                 disabled={isLinking}
                                 className="min-w-0 flex-1 rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm placeholder-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:border-emerald-400 dark:focus:ring-emerald-500/30"
-                                aria-label={`Account/receipt number for ${service.name}`}
+                                aria-label={`Número de cuenta/recibo para ${service.name}`}
                               />
                               <button
                                 type="button"
@@ -585,9 +585,9 @@ export function ClientsView({ initialClients, fetchError }) {
                                     : !linkForm.accountNumber?.trim())
                                 }
                                 className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50 dark:bg-emerald-500 dark:hover:bg-emerald-600"
-                                aria-label={`Add ${service.name} account`}
+                                aria-label={`Agregar cuenta de ${service.name}`}
                               >
-                                {receipts.length === 0 ? "Link" : "Add"}
+                                {receipts.length === 0 ? "Vincular" : "Agregar"}
                               </button>
                             </div>
                           </li>
@@ -620,22 +620,22 @@ export function ClientsView({ initialClients, fetchError }) {
                   onClick={closeForm}
                   disabled={isSubmitting}
                   className="flex-1 rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-700 transition-all hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                  aria-label="Cancel"
+                  aria-label="Cancelar"
                 >
-                  Cancel
+                  Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
                   className="flex-1 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-medium text-white transition-all hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:focus:ring-offset-zinc-900"
                   aria-busy={isSubmitting}
-                  aria-label={isEditing ? "Save changes" : "Create client"}
+                  aria-label={isEditing ? "Guardar cambios" : "Crear cliente"}
                 >
                   {isSubmitting
-                    ? "Saving…"
+                    ? "Guardando…"
                     : isEditing
-                      ? "Save"
-                      : "Create"}
+                      ? "Guardar"
+                      : "Crear"}
                 </button>
               </div>
             </form>
@@ -655,14 +655,14 @@ export function ClientsView({ initialClients, fetchError }) {
         >
           <div className="w-full max-w-sm rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
             <h2 id="delete-dialog-title" className="text-xl font-bold text-zinc-900 dark:text-zinc-50">
-              Delete client
+              Eliminar cliente
             </h2>
             <p id="delete-dialog-desc" className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-              Are you sure you want to delete{" "}
+              ¿Estás seguro de que deseas eliminar a{" "}
               <strong>
                 {deleteTarget.name} {deleteTarget.last_name}
               </strong>
-              ? This cannot be undone.
+              ? Esta acción no se puede deshacer.
             </p>
             {deleteError && (
               <div
@@ -678,9 +678,9 @@ export function ClientsView({ initialClients, fetchError }) {
                 onClick={handleDeleteCancel}
                 disabled={isDeleting}
                 className="flex-1 rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-700 transition-all hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
-                aria-label="Cancel"
+                aria-label="Cancelar"
               >
-                Cancel
+                Cancelar
               </button>
               <button
                 type="button"
@@ -688,9 +688,9 @@ export function ClientsView({ initialClients, fetchError }) {
                 disabled={isDeleting}
                 className="flex-1 rounded-xl bg-red-600 px-4 py-3 text-sm font-medium text-white transition-all hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 dark:focus:ring-offset-zinc-900"
                 aria-busy={isDeleting}
-                aria-label="Delete client"
+                aria-label="Eliminar cliente"
               >
-                {isDeleting ? "Deleting…" : "Delete"}
+                {isDeleting ? "Eliminando…" : "Eliminar"}
               </button>
             </div>
           </div>

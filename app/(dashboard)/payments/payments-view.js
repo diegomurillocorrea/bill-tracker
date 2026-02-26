@@ -180,11 +180,11 @@ export function PaymentsView({ initialPayments, fetchError }) {
     setFormError(null);
     const total_amount = amount.trim() === "" ? NaN : Number(amount);
     if (!selectedReceipt?.id) {
-      setFormError("Search and select a receipt (client account).");
+      setFormError("Busca y selecciona un recibo (cuenta de cliente).");
       return;
     }
     if (Number.isNaN(total_amount) || total_amount < 0) {
-      setFormError("Enter a valid amount (0 or greater).");
+      setFormError("Ingresa un monto válido (0 o mayor).");
       return;
     }
     setIsSubmitting(true);
@@ -209,10 +209,10 @@ export function PaymentsView({ initialPayments, fetchError }) {
     <div className="space-y-6 tablet:space-y-8">
       <header>
         <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 tablet:text-3xl">
-          Payments
+          Pagos
         </h1>
         <p className="mt-1.5 text-sm text-zinc-600 dark:text-zinc-400 tablet:text-base">
-          Register payments for client service accounts (receipts).
+          Registrar pagos para cuentas de servicio de clientes (recibos).
         </p>
       </header>
 
@@ -227,7 +227,7 @@ export function PaymentsView({ initialPayments, fetchError }) {
 
       <section className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 tablet:p-8">
         <h2 className="mb-5 text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-          Register payment
+          Registrar pago
         </h2>
         <form
           onSubmit={handleSubmit}
@@ -238,7 +238,7 @@ export function PaymentsView({ initialPayments, fetchError }) {
               htmlFor="payment-receipt-search"
               className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
             >
-              Receipt (client · service · account) <span className="text-red-500">*</span>
+              Recibo (cliente · servicio · cuenta) <span className="text-red-500">*</span>
             </label>
             {selectedReceipt ? (
               <div className="flex items-center gap-2 rounded-xl border border-zinc-300 bg-zinc-50 px-4 py-3 dark:border-zinc-600 dark:bg-zinc-800/50">
@@ -250,7 +250,7 @@ export function PaymentsView({ initialPayments, fetchError }) {
                   onClick={handleClearReceipt}
                   disabled={isSubmitting}
                   className="shrink-0 rounded p-1 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-700 disabled:opacity-50 dark:hover:bg-zinc-700 dark:hover:text-zinc-200"
-                  aria-label="Clear selection"
+                  aria-label="Limpiar selección"
                 >
                   <span aria-hidden>×</span>
                 </button>
@@ -268,7 +268,7 @@ export function PaymentsView({ initialPayments, fetchError }) {
                   }}
                   onFocus={() => setDropdownOpen(true)}
                   disabled={isSubmitting}
-                  placeholder="Search by client name, service, or account number…"
+                  placeholder="Buscar por nombre de cliente, servicio o número de cuenta…"
                   className={inputClass}
                   aria-invalid={!!formError}
                   aria-expanded={dropdownOpen}
@@ -284,15 +284,15 @@ export function PaymentsView({ initialPayments, fetchError }) {
                   >
                     {searchLoading ? (
                       <li className="px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400">
-                        Searching…
+                        Buscando…
                       </li>
                     ) : searchQuery.trim().length < MIN_SEARCH_LENGTH ? (
                       <li className="px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400">
-                        Type at least {MIN_SEARCH_LENGTH} characters to search
+                        Escribe al menos {MIN_SEARCH_LENGTH} caracteres para buscar
                       </li>
                     ) : searchResults.length === 0 ? (
                       <li className="px-3 py-2 text-sm text-zinc-500 dark:text-zinc-400">
-                        No receipts found
+                        No se encontraron recibos
                       </li>
                     ) : (
                       searchResults.map((receipt) => (
@@ -317,7 +317,7 @@ export function PaymentsView({ initialPayments, fetchError }) {
               htmlFor="payment-amount"
               className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
             >
-              Amount <span className="text-red-500">*</span>
+              Monto <span className="text-red-500">*</span>
             </label>
             <input
               id="payment-amount"
@@ -338,9 +338,9 @@ export function PaymentsView({ initialPayments, fetchError }) {
             disabled={isSubmitting || !selectedReceipt}
             className="h-12 shrink-0 rounded-xl bg-emerald-600 px-5 text-sm font-medium text-white transition-all hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:focus:ring-offset-zinc-900"
             aria-busy={isSubmitting}
-            aria-label="Register payment"
+            aria-label="Registrar pago"
           >
-            {isSubmitting ? "Saving…" : "Register"}
+            {isSubmitting ? "Guardando…" : "Registrar"}
           </button>
         </form>
         {formError && (
@@ -352,21 +352,21 @@ export function PaymentsView({ initialPayments, fetchError }) {
           </div>
         )}
         <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
-          Search by client name, service name, or account/receipt number. Select
-          a result to register the payment.
+          Busca por nombre de cliente, nombre de servicio o número de cuenta/recibo. Selecciona
+          un resultado para registrar el pago.
         </p>
       </section>
 
       <section className="overflow-hidden rounded-2xl border border-zinc-200/80 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <div className="border-b border-zinc-200/80 bg-zinc-50/50 px-4 py-3.5 dark:border-zinc-800 dark:bg-zinc-800/30 tablet:px-6">
           <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-            Payment history
+            Historial de pagos
           </h2>
         </div>
         {payments.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-4 px-4 py-20 text-center">
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              No payments registered yet.
+              Aún no hay pagos registrados.
             </p>
           </div>
         ) : isMobile ? (
@@ -397,9 +397,9 @@ export function PaymentsView({ initialPayments, fetchError }) {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600 hover:underline dark:text-emerald-400"
-                        aria-label={`Send voucher via WhatsApp to ${getPaymentReceiptDisplay(payment)}`}
+                        aria-label={`Enviar comprobante por WhatsApp a ${getPaymentReceiptDisplay(payment)}`}
                       >
-                        <span aria-hidden>Send Voucher</span>
+                        <span aria-hidden>Enviar Comprobante</span>
                         <svg
                           className="h-4 w-4 shrink-0"
                           fill="currentColor"
@@ -412,9 +412,9 @@ export function PaymentsView({ initialPayments, fetchError }) {
                     ) : (
                       <span
                         className="text-sm text-zinc-400 dark:text-zinc-500"
-                        title={hasPhone ? "Invalid phone number" : "No phone number for this client"}
+                        title={hasPhone ? "Número de teléfono inválido" : "No hay número de teléfono para este cliente"}
                       >
-                        Send Voucher
+                        Enviar Comprobante
                       </span>
                     )}
                   </div>
@@ -428,16 +428,16 @@ export function PaymentsView({ initialPayments, fetchError }) {
               <thead>
                 <tr className="border-b border-zinc-200/80 dark:border-zinc-800">
                   <th className="px-4 py-3.5 font-semibold text-zinc-700 dark:text-zinc-300 tablet:px-6">
-                    Receipt (client · service · account)
+                    Recibo (cliente · servicio · cuenta)
                   </th>
                   <th className="px-4 py-3.5 font-semibold text-zinc-700 dark:text-zinc-300 tablet:px-6">
-                    Amount
+                    Monto
                   </th>
                   <th className="px-4 py-3.5 font-semibold text-zinc-700 dark:text-zinc-300 tablet:px-6">
-                    Date
+                    Fecha
                   </th>
                   <th className="px-4 py-3.5 font-semibold text-zinc-700 dark:text-zinc-300 tablet:px-6">
-                    <span className="sr-only">Actions</span>
+                    <span className="sr-only">Acciones</span>
                   </th>
                 </tr>
               </thead>
@@ -466,9 +466,9 @@ export function PaymentsView({ initialPayments, fetchError }) {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600 hover:underline dark:text-emerald-400"
-                            aria-label={`Send voucher via WhatsApp to ${getPaymentReceiptDisplay(payment)}`}
+                            aria-label={`Enviar comprobante por WhatsApp a ${getPaymentReceiptDisplay(payment)}`}
                           >
-                            <span aria-hidden>Send Voucher</span>
+                            <span aria-hidden>Enviar Comprobante</span>
                             <svg
                               className="h-4 w-4 shrink-0"
                               fill="currentColor"
@@ -481,9 +481,9 @@ export function PaymentsView({ initialPayments, fetchError }) {
                         ) : (
                           <span
                             className="text-sm text-zinc-400 dark:text-zinc-500"
-                            title={hasPhone ? "Invalid phone number" : "No phone number for this client"}
+                            title={hasPhone ? "Número de teléfono inválido" : "No hay número de teléfono para este cliente"}
                           >
-                            Send Voucher
+                            Enviar Comprobante
                           </span>
                         )}
                       </td>

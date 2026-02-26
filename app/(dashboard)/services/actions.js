@@ -11,7 +11,7 @@ export async function createServiceAction(formData) {
   const name = formData.name?.trim();
 
   if (!name) {
-    return { error: "Name is required." };
+    return { error: "El nombre es requerido." };
   }
 
   const supabase = await createClient();
@@ -37,13 +37,13 @@ export async function createServiceAction(formData) {
  */
 export async function updateServiceAction(id, formData) {
   if (!id) {
-    return { error: "Service ID is required." };
+    return { error: "El ID del servicio es requerido." };
   }
 
   const name = formData.name?.trim();
 
   if (!name) {
-    return { error: "Name is required." };
+    return { error: "El nombre es requerido." };
   }
 
   const supabase = await createClient();
@@ -64,7 +64,7 @@ export async function updateServiceAction(id, formData) {
  */
 export async function deleteServiceAction(id) {
   if (!id) {
-    return { error: "Service ID is required." };
+    return { error: "El ID del servicio es requerido." };
   }
 
   const supabase = await createClient();

@@ -16,11 +16,10 @@ export default function DashboardPage() {
     <div className="space-y-10 tablet:space-y-12">
       <header className="space-y-1">
         <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 tablet:text-3xl">
-          Dashboard
+          Panel de Control
         </h1>
         <p className="max-w-xl text-base text-zinc-600 dark:text-zinc-400">
-          Manage clients and their water, electrical power, and internet
-          services.
+          Gestiona clientes y sus servicios de agua, electricidad e internet.
         </p>
       </header>
 
@@ -31,16 +30,16 @@ export default function DashboardPage() {
         <Link
           href="/clients"
           className={CARD_CLASS}
-          aria-label="View and manage clients"
+          aria-label="Ver y gestionar clientes"
         >
           <span className={CARD_TITLE_CLASS} aria-hidden>
-            Clients
+            Clientes
           </span>
           <span className={CARD_DESC_CLASS}>
-            View and manage clients and their assigned services.
+            Ver y gestionar clientes y sus servicios asignados.
           </span>
           <span className={CARD_LINK_CLASS}>
-            Open Clients
+            Abrir Clientes
             <svg className="h-4 w-4 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
@@ -50,16 +49,16 @@ export default function DashboardPage() {
         <Link
           href="/services"
           className={CARD_CLASS}
-          aria-label="View services"
+          aria-label="Ver servicios"
         >
           <span className={CARD_TITLE_CLASS} aria-hidden>
-            Services
+            Servicios
           </span>
           <span className={CARD_DESC_CLASS}>
-            Water, Electrical Power, and Internet — see who has each service.
+            Agua, Electricidad e Internet — ver quién tiene cada servicio.
           </span>
           <span className={CARD_LINK_CLASS}>
-            Open Services
+            Abrir Servicios
             <svg className="h-4 w-4 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
@@ -69,16 +68,16 @@ export default function DashboardPage() {
         <Link
           href="/payments"
           className={CARD_CLASS}
-          aria-label="View and manage payments"
+          aria-label="Ver y gestionar pagos"
         >
           <span className={CARD_TITLE_CLASS} aria-hidden>
-            Payments
+            Pagos
           </span>
           <span className={CARD_DESC_CLASS}>
-            View, track, and manage all client payments.
+            Ver, rastrear y gestionar todos los pagos de clientes.
           </span>
           <span className={CARD_LINK_CLASS}>
-            Open Payments
+            Abrir Pagos
             <svg className="h-4 w-4 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>

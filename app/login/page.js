@@ -54,10 +54,10 @@ function LoginForm() {
       <main className="w-full max-w-md rounded-2xl border border-zinc-200/80 bg-white p-8 shadow-lg dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-xl tablet:p-10">
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 tablet:text-3xl">
-            Bill Tracker
+            Gestor de Recibos
           </h1>
           <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-            Sign in to your account
+            Inicia sesión en tu cuenta
           </p>
         </div>
 
@@ -75,11 +75,11 @@ function LoginForm() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+              placeholder="tu@ejemplo.com"
               required
               disabled={isLoading}
               className={inputClass}
-              aria-label="Email address"
+              aria-label="Dirección de correo electrónico"
               aria-invalid={!!displayError}
             />
           </div>
@@ -89,7 +89,7 @@ function LoginForm() {
               htmlFor="password"
               className="mb-1.5 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
             >
-              Password
+              Contraseña
             </label>
             <input
               id="password"
@@ -101,7 +101,7 @@ function LoginForm() {
               required
               disabled={isLoading}
               className={inputClass}
-              aria-label="Password"
+              aria-label="Contraseña"
               aria-invalid={!!displayError}
             />
           </div>
@@ -129,9 +129,9 @@ function LoginForm() {
             disabled={isLoading}
             className="flex h-12 w-full items-center justify-center rounded-xl bg-emerald-600 font-medium text-white transition-all duration-200 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:focus:ring-offset-zinc-900"
             aria-busy={isLoading}
-            aria-label="Sign in"
+            aria-label="Iniciar sesión"
           >
-            {isLoading ? "Signing in…" : "Sign in"}
+            {isLoading ? "Iniciando sesión…" : "Iniciar sesión"}
           </button>
         </form>
       </main>
@@ -145,10 +145,10 @@ function LoginFallback() {
       <main className="w-full max-w-md rounded-2xl border border-zinc-200/80 bg-white p-8 shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-            Bill Tracker
+            Gestor de Recibos
           </h1>
           <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-            Loading…
+            Cargando…
           </p>
         </div>
       </main>

@@ -20,7 +20,7 @@ export async function createClientAction(formData) {
   const last_name = formData.last_name?.trim();
 
   if (!name || !last_name) {
-    return { error: "Name and last name are required." };
+    return { error: "El nombre y apellido son requeridos." };
   }
 
   const supabase = await createClient();
@@ -51,14 +51,14 @@ export async function createClientAction(formData) {
  */
 export async function updateClientAction(id, formData) {
   if (!id) {
-    return { error: "Client ID is required." };
+    return { error: "El ID del cliente es requerido." };
   }
 
   const name = formData.name?.trim();
   const last_name = formData.last_name?.trim();
 
   if (!name || !last_name) {
-    return { error: "Name and last name are required." };
+    return { error: "El nombre y apellido son requeridos." };
   }
 
   const supabase = await createClient();
@@ -87,7 +87,7 @@ export async function updateClientAction(id, formData) {
  */
 export async function deleteClientAction(id) {
   if (!id) {
-    return { error: "Client ID is required." };
+    return { error: "El ID del cliente es requerido." };
   }
 
   const supabase = await createClient();
@@ -126,7 +126,7 @@ export async function getServicesListAction() {
  */
 export async function getClientReceiptsAction(clientId) {
   if (!clientId) {
-    return { error: "Client ID is required." };
+    return { error: "El ID del cliente es requerido." };
   }
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -147,7 +147,7 @@ export async function getClientReceiptsAction(clientId) {
 export async function createReceiptAction(payload) {
   const account_receipt_number = payload.account_receipt_number?.trim();
   if (!payload.client_id || !payload.service_id || !account_receipt_number) {
-    return { error: "Client, service, and account/receipt number are required." };
+    return { error: "El cliente, servicio y número de cuenta/recibo son requeridos." };
   }
 
   const supabase = await createClient();
@@ -173,7 +173,7 @@ export async function createReceiptAction(payload) {
  */
 export async function deleteReceiptAction(clientId, serviceId) {
   if (!clientId || !serviceId) {
-    return { error: "Client ID and service ID are required." };
+    return { error: "El ID del cliente y el ID del servicio son requeridos." };
   }
 
   const supabase = await createClient();
@@ -199,7 +199,7 @@ export async function deleteReceiptAction(clientId, serviceId) {
  */
 export async function deleteReceiptByIdAction(receiptId) {
   if (!receiptId) {
-    return { error: "Receipt ID is required." };
+    return { error: "El ID del recibo es requerido." };
   }
 
   const supabase = await createClient();
