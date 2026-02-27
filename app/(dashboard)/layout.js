@@ -13,7 +13,7 @@ const NAV_ITEMS = [
   { href: "/payment-methods", label: "Métodos de pago" },
 ];
 
-function NavContent({ pathname, onNavClick, hideLogo }) {
+function NavContent({ pathname, onNavClick, hideLogo, hideThemeToggle }) {
   return (
     <>
       {!hideLogo && (
@@ -51,7 +51,7 @@ function NavContent({ pathname, onNavClick, hideLogo }) {
       </nav>
       <div className="border-t border-zinc-200/80 p-3 dark:border-zinc-800">
         <div className="flex flex-col gap-2">
-          <ThemeToggle />
+          {!hideThemeToggle && <ThemeToggle />}
           <SignOutButton />
         </div>
       </div>
@@ -273,6 +273,7 @@ export default function DashboardLayout({ children }) {
           pathname={pathname}
           onNavClick={isMobile ? closeMobileMenu : undefined}
           hideLogo={isMobile}
+          hideThemeToggle={isMobile || isTablet}
         />
       </aside>
 
