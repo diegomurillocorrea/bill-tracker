@@ -279,7 +279,7 @@ export default function DashboardLayout({ children }) {
       {/* Main content */}
       <main className="flex-1 overflow-auto tablet:min-w-0">
         <div
-          className={`p-4 tablet:p-6 desktop:p-8 desktop:max-w-7xl ${isMobile ? "pt-20" : ""} ${isTablet ? "pt-10" : ""}`}
+          className={`w-full p-4 tablet:p-6 desktop:p-8 ${isMobile ? "pt-20" : ""} ${isTablet ? "pt-10" : ""}`}
         >
           {children}
         </div>
