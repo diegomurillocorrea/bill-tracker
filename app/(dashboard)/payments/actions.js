@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { PAYMENT_PROOF_BUCKET, PAYMENT_STATUS_PAID, PAYMENT_STATUS_PENDING } from "./constants";
 
 const SEARCH_DEBOUNCE_MIN_LENGTH = 2;
 const SEARCH_RECEIPTS_LIMIT = 25;
@@ -54,13 +55,15 @@ export async function searchReceiptsForPaymentAction(query) {
 }
 
 /**
- * @param {{ receipt_id: string; total_amount: number; payment_method_id: string }} payload
+ * @param {{ receipt_id: string; total_amount: number; payment_method_id: string; status?: number }} payload
  * @returns {Promise<{ error: string | null }>}
  */
 export async function createPaymentAction(payload) {
   const receipt_id = payload.receipt_id?.trim();
   const total_amount = Number(payload.total_amount);
   const payment_method_id = payload.payment_method_id?.trim();
+  const status =
+    payload.status === PAYMENT_STATUS_PAID ? PAYMENT_STATUS_PAID : PAYMENT_STATUS_PENDING;
 
   if (!receipt_id) {
     return { error: "El recibo es requerido." };
@@ -79,6 +82,7 @@ export async function createPaymentAction(payload) {
     receipt_id,
     total_amount,
     payment_method_id,
+    status,
   });
 
   if (error) {
@@ -92,7 +96,7 @@ export async function createPaymentAction(payload) {
 
 /**
  * @param {string} id
- * @param {{ receipt_id: string; total_amount: number; payment_method_id: string }} payload
+ * @param {{ receipt_id: string; total_amount: number; payment_method_id: string; status?: number }} payload
  * @returns {Promise<{ error: string | null }>}
  */
 export async function updatePaymentAction(id, payload) {
@@ -103,6 +107,8 @@ export async function updatePaymentAction(id, payload) {
   const receipt_id = payload.receipt_id?.trim();
   const total_amount = Number(payload.total_amount);
   const payment_method_id = payload.payment_method_id?.trim();
+  const status =
+    payload.status === PAYMENT_STATUS_PAID ? PAYMENT_STATUS_PAID : PAYMENT_STATUS_PENDING;
 
   if (!receipt_id) {
     return { error: "El recibo es requerido." };
@@ -123,6 +129,7 @@ export async function updatePaymentAction(id, payload) {
       receipt_id,
       total_amount,
       payment_method_id,
+      status,
     })
     .eq("id", id);
 
@@ -154,4 +161,130 @@ export async function deletePaymentAction(id) {
   revalidatePath("/payments");
   revalidatePath("/");
   return { error: null };
+}
+
+/**
+ * Upload a proof image for a payment. File is stored in Supabase Storage; payment row stores path.
+ * @param {string} paymentId
+ * @param {FormData} formData - must contain a file under key "proof"
+ * @returns {Promise<{ error: string | null; publicUrl?: string; proof_path?: string; proof_bucket?: string }>}
+ */
+export async function uploadPaymentProofAction(paymentId, formData) {
+  if (!paymentId) {
+    return { error: "El ID del pago es requerido." };
+  }
+
+  const file = formData?.get("proof");
+  if (!file || !(file instanceof File)) {
+    return { error: "Selecciona una imagen para subir." };
+  }
+
+  const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+  if (!allowedTypes.includes(file.type)) {
+    return { error: "Formato no válido. Usa JPG, PNG, GIF o WebP." };
+  }
+
+  const maxSizeBytes = 5 * 1024 * 1024; // 5MB
+  if (file.size > maxSizeBytes) {
+    return { error: "La imagen no debe superar 5 MB." };
+  }
+
+  const supabase = await createClient();
+  const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+  const path = `${paymentId}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(PAYMENT_PROOF_BUCKET)
+    .upload(path, file, { contentType: file.type, upsert: false });
+
+  if (uploadError) {
+    return { error: uploadError.message };
+  }
+
+  const { error: updateError } = await supabase
+    .from("payments")
+    .update({ proof_bucket: PAYMENT_PROOF_BUCKET, proof_path: path })
+    .eq("id", paymentId);
+
+  if (updateError) {
+    return { error: updateError.message };
+  }
+
+  const { data: urlData } = supabase.storage.from(PAYMENT_PROOF_BUCKET).getPublicUrl(path);
+  revalidatePath("/payments");
+  revalidatePath("/");
+  return { error: null, publicUrl: urlData?.publicUrl, proof_path: path, proof_bucket: PAYMENT_PROOF_BUCKET };
+}
+
+/**
+ * Remove the proof image from a payment (delete from storage and clear reference).
+ * @param {string} paymentId
+ * @returns {Promise<{ error: string | null }>}
+ */
+export async function removePaymentProofAction(paymentId) {
+  if (!paymentId) {
+    return { error: "El ID del pago es requerido." };
+  }
+
+  const supabase = await createClient();
+  const { data: payment, error: fetchError } = await supabase
+    .from("payments")
+    .select("proof_bucket, proof_path")
+    .eq("id", paymentId)
+    .single();
+
+  if (fetchError || !payment) {
+    return { error: fetchError?.message ?? "Pago no encontrado." };
+  }
+
+  if (payment.proof_bucket && payment.proof_path) {
+    await supabase.storage.from(payment.proof_bucket).remove([payment.proof_path]);
+  }
+
+  const { error: updateError } = await supabase
+    .from("payments")
+    .update({ proof_bucket: null, proof_path: null })
+    .eq("id", paymentId);
+
+  if (updateError) {
+    return { error: updateError.message };
+  }
+
+  revalidatePath("/payments");
+  revalidatePath("/");
+  return { error: null };
+}
+
+/**
+ * Get a signed URL for the payment proof image (works with public or private buckets).
+ * @param {string} paymentId
+ * @returns {Promise<{ error: string | null; url?: string }>}
+ */
+export async function getPaymentProofUrlAction(paymentId) {
+  if (!paymentId) {
+    return { error: "El ID del pago es requerido." };
+  }
+
+  const supabase = await createClient();
+  const { data: payment, error: fetchError } = await supabase
+    .from("payments")
+    .select("proof_bucket, proof_path")
+    .eq("id", paymentId)
+    .single();
+
+  if (fetchError || !payment?.proof_bucket || !payment?.proof_path) {
+    return { error: fetchError?.message ?? "No hay comprobante para este pago." };
+  }
+
+  const { data: signed, error: signError } = await supabase.storage
+    .from(payment.proof_bucket)
+    .createSignedUrl(payment.proof_path, 3600); // 1 hour
+
+  if (signError) {
+    return { error: signError.message };
+  }
+  if (!signed?.signedUrl) {
+    return { error: "No se pudo generar el enlace de la imagen." };
+  }
+  return { error: null, url: signed.signedUrl };
 }

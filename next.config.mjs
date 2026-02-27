@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* config options here */
+  serverActions: {
+    bodySizeLimit: "6mb",
+  },
 };
 
 export default nextConfig;

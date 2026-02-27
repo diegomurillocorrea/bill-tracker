@@ -3,7 +3,32 @@
 import { useRouter } from "next/navigation";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
-import { createPaymentAction, updatePaymentAction, deletePaymentAction, searchReceiptsForPaymentAction } from "./actions";
+import {
+  createPaymentAction,
+  updatePaymentAction,
+  deletePaymentAction,
+  searchReceiptsForPaymentAction,
+  uploadPaymentProofAction,
+  removePaymentProofAction,
+  getPaymentProofUrlAction,
+} from "./actions";
+import {
+  PAYMENT_STATUS_PENDING,
+  PAYMENT_STATUS_PAID,
+  STATUS_LABELS,
+} from "./constants";
+
+function getStatusLabel(status) {
+  if (status === PAYMENT_STATUS_PAID) return STATUS_LABELS[PAYMENT_STATUS_PAID];
+  return STATUS_LABELS[PAYMENT_STATUS_PENDING];
+}
+
+function getProofPublicUrl(payment) {
+  if (!payment?.proof_bucket || !payment?.proof_path) return null;
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!base) return null;
+  return `${base}/storage/v1/object/public/${payment.proof_bucket}/${payment.proof_path}`;
+}
 
 const MONTHS_ES = [
   "ene", "feb", "mar", "abr", "may", "jun",
@@ -128,15 +153,28 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState(PAYMENT_STATUS_PENDING);
   const [amount, setAmount] = useState("");
   const [formError, setFormError] = useState(null);
+  const [proofUploadingId, setProofUploadingId] = useState(null);
+  const [proofRemovingId, setProofRemovingId] = useState(null);
+  const [proofError, setProofError] = useState(null);
+  const [proofPreviewPayment, setProofPreviewPayment] = useState(null);
+  const [proofPreviewImageUrl, setProofPreviewImageUrl] = useState(null);
+  const [proofPreviewLoading, setProofPreviewLoading] = useState(false);
+  const [proofPreviewError, setProofPreviewError] = useState(null);
+  const [proofUploadModalPayment, setProofUploadModalPayment] = useState(null);
+  const proofFileInputRef = useRef(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingPayment, setEditingPayment] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState(null);
   const [dateFilter, setDateFilter] = useState("daily");
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
+  const [selectedDate, setSelectedDate] = useState(() => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+});
   const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
   const searchTimeoutRef = useRef(null);
   const comboboxRef = useRef(null);
@@ -204,6 +242,9 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
     setSelectedReceipt({ id: payment.receipt_id, label: getReceiptLabel(receipt) });
     setAmount(String(payment.total_amount));
     setSelectedPaymentMethod(payment.payment_method_id ?? "");
+    setSelectedStatus(
+      payment.status === PAYMENT_STATUS_PAID ? PAYMENT_STATUS_PAID : PAYMENT_STATUS_PENDING
+    );
     setFormError(null);
   }, []);
 
@@ -212,6 +253,7 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
     setSelectedReceipt(null);
     setAmount("");
     setSelectedPaymentMethod("");
+    setSelectedStatus(PAYMENT_STATUS_PENDING);
     setFormError(null);
   }, []);
 
@@ -238,6 +280,91 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
     setDeleteTarget(null);
     setDeleteError(null);
   }, []);
+
+  const handleProofPreview = useCallback((payment) => {
+    if (!payment?.id || !getProofPublicUrl(payment)) return;
+    setProofPreviewPayment(payment);
+    setProofPreviewImageUrl(null);
+    setProofPreviewError(null);
+    setProofPreviewLoading(true);
+  }, []);
+
+  useEffect(() => {
+    if (!proofPreviewPayment?.id || !proofPreviewLoading) return;
+    let cancelled = false;
+    (async () => {
+      const result = await getPaymentProofUrlAction(proofPreviewPayment.id);
+      if (cancelled) return;
+      setProofPreviewLoading(false);
+      if (result.error) {
+        setProofPreviewError(result.error);
+        return;
+      }
+      setProofPreviewImageUrl(result.url ?? null);
+    })();
+    return () => { cancelled = true; };
+  }, [proofPreviewPayment?.id, proofPreviewLoading]);
+
+  const handleProofPreviewClose = useCallback(() => {
+    setProofPreviewPayment(null);
+    setProofPreviewImageUrl(null);
+    setProofPreviewError(null);
+    setProofPreviewLoading(false);
+  }, []);
+
+  const handleProofUploadOpen = useCallback((payment) => {
+    setProofUploadModalPayment(payment);
+    setProofError(null);
+    if (proofFileInputRef.current) proofFileInputRef.current.value = "";
+  }, []);
+
+  const handleProofUploadClose = useCallback(() => {
+    setProofUploadModalPayment(null);
+    setProofError(null);
+  }, []);
+
+  const handleProofUploadSubmit = async (e) => {
+    e.preventDefault();
+    if (!proofUploadModalPayment) return;
+    const input = proofFileInputRef.current;
+    if (!input?.files?.length) {
+      setProofError("Selecciona una imagen.");
+      return;
+    }
+    const formData = new FormData();
+    formData.set("proof", input.files[0]);
+    setProofUploadingId(proofUploadModalPayment.id);
+    setProofError(null);
+    const result = await uploadPaymentProofAction(proofUploadModalPayment.id, formData);
+    setProofUploadingId(null);
+    if (result.error) {
+      setProofError(result.error);
+      return;
+    }
+    if (editingPayment?.id === proofUploadModalPayment.id && result.proof_path != null) {
+      setEditingPayment((prev) =>
+        prev ? { ...prev, proof_bucket: result.proof_bucket ?? null, proof_path: result.proof_path } : null
+      );
+    }
+    setProofUploadModalPayment(null);
+    router.refresh();
+  };
+
+  const handleProofRemove = useCallback(async (payment) => {
+    if (!payment?.id) return;
+    setProofRemovingId(payment.id);
+    setProofError(null);
+    const result = await removePaymentProofAction(payment.id);
+    setProofRemovingId(null);
+    if (result.error) {
+      setProofError(result.error);
+      return;
+    }
+    if (editingPayment?.id === payment.id) {
+      setEditingPayment((prev) => (prev ? { ...prev, proof_bucket: null, proof_path: null } : null));
+    }
+    router.refresh();
+  }, [editingPayment?.id]);
 
   const getFilteredPayments = useCallback(() => {
     const [year, month, day] = selectedDate.split("-").map(Number);
@@ -329,12 +456,14 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
         receipt_id: selectedReceipt.id,
         total_amount,
         payment_method_id: selectedPaymentMethod,
+        status: selectedStatus,
       });
     } else {
       result = await createPaymentAction({
         receipt_id: selectedReceipt.id,
         total_amount,
         payment_method_id: selectedPaymentMethod,
+        status: selectedStatus,
       });
     }
     
@@ -347,6 +476,7 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
     setSelectedReceipt(null);
     setAmount("");
     setSelectedPaymentMethod("");
+    setSelectedStatus(PAYMENT_STATUS_PENDING);
     router.refresh();
   };
 
@@ -634,6 +764,25 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
           </div>
           <div className="w-full tablet:w-40">
             <label
+              htmlFor="payment-status"
+              className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            >
+              Estado
+            </label>
+            <select
+              id="payment-status"
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(Number(e.target.value))}
+              disabled={isSubmitting}
+              className={inputClass}
+              aria-label="Estado del pago"
+            >
+              <option value={PAYMENT_STATUS_PENDING}>{STATUS_LABELS[PAYMENT_STATUS_PENDING]}</option>
+              <option value={PAYMENT_STATUS_PAID}>{STATUS_LABELS[PAYMENT_STATUS_PAID]}</option>
+            </select>
+          </div>
+          <div className="w-full tablet:w-40">
+            <label
               htmlFor="payment-amount"
               className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
             >
@@ -663,6 +812,51 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
             {isSubmitting ? "Guardando…" : editingPayment ? "Guardar" : "Registrar"}
           </button>
         </form>
+        {editingPayment && (
+          <div className="mt-4 rounded-xl border border-zinc-200/80 bg-zinc-50/50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800/50">
+            <span className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              Comprobante de pago
+            </span>
+            {getProofPublicUrl(editingPayment) ? (
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleProofPreview(editingPayment)}
+                  className="text-sm font-medium text-emerald-600 underline-offset-2 hover:underline dark:text-emerald-400"
+                  aria-label="Ver comprobante"
+                >
+                  Ver comprobante
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleProofRemove(editingPayment)}
+                  disabled={proofRemovingId === editingPayment.id}
+                  className="text-sm font-medium text-red-600 underline-offset-2 hover:underline disabled:opacity-50 dark:text-red-400"
+                  aria-label="Quitar comprobante"
+                >
+                  {proofRemovingId === editingPayment.id ? "Quitando…" : "Quitar comprobante"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleProofUploadOpen(editingPayment)}
+                  className="text-sm font-medium text-zinc-600 underline-offset-2 hover:underline dark:text-zinc-400"
+                  aria-label="Reemplazar comprobante"
+                >
+                  Reemplazar
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleProofUploadOpen(editingPayment)}
+                className="text-sm font-medium text-emerald-600 underline-offset-2 hover:underline dark:text-emerald-400"
+                aria-label="Subir comprobante"
+              >
+                Subir comprobante
+              </button>
+            )}
+          </div>
+        )}
         {formError && (
           <div
             role="alert"
@@ -709,6 +903,17 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
                     <span className="text-xs text-zinc-600 dark:text-zinc-400">
                       {getPaymentMethodName(payment)}
                     </span>
+                    <span className="text-xs">
+                      <span
+                        className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                          payment.status === PAYMENT_STATUS_PAID
+                            ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300"
+                            : "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+                        }`}
+                      >
+                        {getStatusLabel(payment.status)}
+                      </span>
+                    </span>
                     <span className="text-xs text-zinc-500 dark:text-zinc-500">
                       {formatDate(payment.created_at)}
                     </span>
@@ -748,6 +953,36 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
                         Comprobante
                       </span>
                     )}
+                    {getProofPublicUrl(payment) ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleProofPreview(payment)}
+                          className="text-sm font-medium text-zinc-700 underline-offset-2 hover:underline dark:text-zinc-300"
+                          aria-label="Ver comprobante de pago"
+                        >
+                          Ver comprobante
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleProofRemove(payment)}
+                          disabled={proofRemovingId === payment.id}
+                          className="text-sm font-medium text-red-600 underline-offset-2 hover:underline disabled:opacity-50 dark:text-red-400"
+                          aria-label="Quitar comprobante de pago"
+                        >
+                          {proofRemovingId === payment.id ? "Quitando…" : "Quitar comprobante"}
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleProofUploadOpen(payment)}
+                        className="text-sm font-medium text-zinc-700 underline-offset-2 hover:underline dark:text-zinc-300"
+                        aria-label="Subir comprobante de pago"
+                      >
+                        Subir comprobante
+                      </button>
+                    )}
                   </div>
                 </li>
               );
@@ -766,6 +1001,9 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
                   </th>
                   <th className="px-4 py-3.5 font-semibold text-zinc-700 dark:text-zinc-300 tablet:px-6">
                     Método de pago
+                  </th>
+                  <th className="px-4 py-3.5 font-semibold text-zinc-700 dark:text-zinc-300 tablet:px-6">
+                    Estado
                   </th>
                   <th className="px-4 py-3.5 font-semibold text-zinc-700 dark:text-zinc-300 tablet:px-6">
                     Fecha
@@ -792,6 +1030,18 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
                       </td>
                       <td className="px-4 py-3.5 text-zinc-600 dark:text-zinc-400 tablet:px-6">
                         {getPaymentMethodName(payment)}
+                      </td>
+                      <td className="px-4 py-3.5 tablet:px-6">
+                        <span
+                          className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                            payment.status === PAYMENT_STATUS_PAID
+                              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300"
+                              : "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+                          }`}
+                          aria-label={`Estado: ${getStatusLabel(payment.status)}`}
+                        >
+                          {getStatusLabel(payment.status)}
+                        </span>
                       </td>
                       <td className="px-4 py-3.5 text-zinc-500 dark:text-zinc-500 tablet:px-6">
                         {formatDate(payment.created_at)}
@@ -832,6 +1082,36 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
                               Comprobante
                             </span>
                           )}
+                          {getProofPublicUrl(payment) ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleProofPreview(payment)}
+                                className="font-medium text-zinc-700 underline-offset-2 hover:underline dark:text-zinc-300"
+                                aria-label="Ver comprobante de pago"
+                              >
+                                Ver comprobante
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleProofRemove(payment)}
+                                disabled={proofRemovingId === payment.id}
+                                className="font-medium text-red-600 underline-offset-2 hover:underline disabled:opacity-50 dark:text-red-400"
+                                aria-label="Quitar comprobante de pago"
+                              >
+                                {proofRemovingId === payment.id ? "Quitando…" : "Quitar comprobante"}
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleProofUploadOpen(payment)}
+                              className="font-medium text-zinc-700 underline-offset-2 hover:underline dark:text-zinc-300"
+                              aria-label="Subir comprobante de pago"
+                            >
+                              Subir comprobante
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -842,6 +1122,142 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
           </div>
         )}
       </section>
+
+      {/* Proof preview modal */}
+      {proofPreviewPayment && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Vista previa del comprobante de pago"
+        >
+          <div className="relative flex max-h-[90vh] max-w-[90vw] flex-col items-center justify-center rounded-xl border border-zinc-200 bg-white p-6 shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
+            <button
+              type="button"
+              onClick={handleProofPreviewClose}
+              className="absolute -right-2 -top-2 z-10 rounded-full bg-zinc-800 p-2 text-white shadow-lg hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:bg-zinc-700 dark:hover:bg-zinc-600"
+              aria-label="Cerrar"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            {proofPreviewLoading && (
+              <p className="py-8 text-sm text-zinc-500 dark:text-zinc-400" aria-live="polite">
+                Cargando imagen…
+              </p>
+            )}
+            {proofPreviewError && !proofPreviewLoading && (
+              <p
+                className="max-w-sm py-8 text-center text-sm text-red-600 dark:text-red-400"
+                role="alert"
+              >
+                {proofPreviewError}
+              </p>
+            )}
+            {proofPreviewImageUrl && !proofPreviewLoading && (
+              <img
+                src={proofPreviewImageUrl}
+                alt="Comprobante de pago"
+                className="max-h-[85vh] max-w-full rounded-lg border border-zinc-200 object-contain shadow-inner dark:border-zinc-600"
+              />
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={handleProofPreviewClose}
+            className="absolute inset-0 -z-10"
+            aria-label="Cerrar overlay"
+          />
+        </div>
+      )}
+
+      {/* Proof upload modal */}
+      {proofUploadModalPayment && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="proof-upload-title"
+        >
+          <div className="w-full max-w-md rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
+            <h2 id="proof-upload-title" className="text-lg font-bold text-zinc-900 dark:text-zinc-50">
+              Subir comprobante de pago
+            </h2>
+            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+              Recibo: {getPaymentReceiptDisplay(proofUploadModalPayment)}. Selecciona una imagen (JPG, PNG, GIF o WebP, máx. 5 MB).
+            </p>
+            <form onSubmit={handleProofUploadSubmit} className="mt-4 space-y-4">
+              <div>
+                <label
+                  htmlFor="proof-file"
+                  className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                >
+                  Imagen del comprobante
+                </label>
+                <input
+                  ref={proofFileInputRef}
+                  id="proof-file"
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-emerald-700 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-50 dark:file:bg-emerald-900/30 dark:file:text-emerald-300"
+                  aria-describedby="proof-file-hint"
+                />
+                <p id="proof-file-hint" className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  JPG, PNG, GIF o WebP. Máximo 5 MB.
+                </p>
+              </div>
+              {proofError && (
+                <div
+                  role="alert"
+                  className="rounded-xl bg-red-50 px-4 py-2.5 text-sm text-red-700 dark:bg-red-950/50 dark:text-red-300"
+                >
+                  {proofError}
+                </div>
+              )}
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={handleProofUploadClose}
+                  className="flex-1 rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium text-zinc-700 transition-all hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                  aria-label="Cancelar"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={proofUploadingId === proofUploadModalPayment.id}
+                  className="flex-1 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-medium text-white transition-all hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 dark:focus:ring-offset-zinc-900"
+                  aria-busy={proofUploadingId === proofUploadModalPayment.id}
+                  aria-label="Subir imagen"
+                >
+                  {proofUploadingId === proofUploadModalPayment.id ? "Subiendo…" : "Subir"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Global proof error (e.g. from remove) */}
+      {proofError && !proofUploadModalPayment && (
+        <div
+          role="alert"
+          className="fixed bottom-4 left-4 right-4 z-40 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 shadow-lg dark:bg-red-950/50 dark:text-red-300 tablet:left-auto tablet:right-4 tablet:max-w-sm"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span>{proofError}</span>
+            <button
+              type="button"
+              onClick={() => setProofError(null)}
+              className="shrink-0 rounded p-1 hover:bg-red-100 dark:hover:bg-red-900/30"
+              aria-label="Cerrar"
+            >
+              <span aria-hidden>×</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Delete confirmation modal */}
       {deleteTarget && (
