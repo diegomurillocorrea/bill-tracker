@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
+import { createClient } from "@/lib/supabase/client";
 import {
   createPaymentAction,
   updatePaymentAction,
@@ -17,6 +18,8 @@ import {
   PAYMENT_STATUS_PAID,
   STATUS_LABELS,
 } from "./constants";
+
+const ALLOWED_ADMIN_EMAIL = "diegomurillocorrea@gmail.com";
 
 function getStatusLabel(status) {
   if (status === PAYMENT_STATUS_PAID) return STATUS_LABELS[PAYMENT_STATUS_PAID];
@@ -185,11 +188,22 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 });
   const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
+  const [userEmail, setUserEmail] = useState(null);
   const searchTimeoutRef = useRef(null);
   const comboboxRef = useRef(null);
   const filterDropdownRef = useRef(null);
   const dateInputRef = useRef(null);
   const paymentMethods = initialPaymentMethods ?? [];
+
+  const canSeeEstado = userEmail === ALLOWED_ADMIN_EMAIL;
+  const canSeeProofActions = userEmail === ALLOWED_ADMIN_EMAIL;
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUserEmail(user?.email ?? null);
+    });
+  }, []);
 
   const runSearch = useCallback(async (query) => {
     const q = (query ?? "").trim();
@@ -804,25 +818,27 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
               ))}
             </select>
           </div>
-          <div className="w-full tablet:w-40">
-            <label
-              htmlFor="payment-status"
-              className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
-            >
-              Estado
-            </label>
-            <select
-              id="payment-status"
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(Number(e.target.value))}
-              disabled={isSubmitting}
-              className={inputClass}
-              aria-label="Estado del pago"
-            >
-              <option value={PAYMENT_STATUS_PENDING}>{STATUS_LABELS[PAYMENT_STATUS_PENDING]}</option>
-              <option value={PAYMENT_STATUS_PAID}>{STATUS_LABELS[PAYMENT_STATUS_PAID]}</option>
-            </select>
-          </div>
+          {canSeeEstado && (
+            <div className="w-full tablet:w-40">
+              <label
+                htmlFor="payment-status"
+                className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+              >
+                Estado
+              </label>
+              <select
+                id="payment-status"
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(Number(e.target.value))}
+                disabled={isSubmitting}
+                className={inputClass}
+                aria-label="Estado del pago"
+              >
+                <option value={PAYMENT_STATUS_PENDING}>{STATUS_LABELS[PAYMENT_STATUS_PENDING]}</option>
+                <option value={PAYMENT_STATUS_PAID}>{STATUS_LABELS[PAYMENT_STATUS_PAID]}</option>
+              </select>
+            </div>
+          )}
           <div className="w-full tablet:w-40">
             <label
               htmlFor="payment-amount"
@@ -854,7 +870,7 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
             {isSubmitting ? "Guardando…" : editingPayment ? "Guardar" : "Registrar"}
           </button>
         </form>
-        {editingPayment && (
+        {editingPayment && (canSeeProofActions || getProofPublicUrl(editingPayment)) && (
           <div className="mt-4 rounded-xl border border-zinc-200/80 bg-zinc-50/50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800/50">
             <span className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
               Comprobante de pago
@@ -869,33 +885,39 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
                 >
                   Ver comprobante
                 </button>
-                <button
-                  type="button"
-                  onClick={() => handleProofRemove(editingPayment)}
-                  disabled={proofRemovingId === editingPayment.id}
-                  className="text-sm font-medium text-red-600 underline-offset-2 hover:underline disabled:opacity-50 dark:text-red-400"
-                  aria-label="Quitar comprobante"
-                >
-                  {proofRemovingId === editingPayment.id ? "Quitando…" : "Quitar comprobante"}
-                </button>
+                {canSeeProofActions && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleProofRemove(editingPayment)}
+                      disabled={proofRemovingId === editingPayment.id}
+                      className="text-sm font-medium text-red-600 underline-offset-2 hover:underline disabled:opacity-50 dark:text-red-400"
+                      aria-label="Quitar comprobante"
+                    >
+                      {proofRemovingId === editingPayment.id ? "Quitando…" : "Quitar comprobante"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleProofUploadOpen(editingPayment)}
+                      className="text-sm font-medium text-zinc-600 underline-offset-2 hover:underline dark:text-zinc-400"
+                      aria-label="Reemplazar comprobante"
+                    >
+                      Reemplazar
+                    </button>
+                  </>
+                )}
+              </div>
+            ) : (
+              canSeeProofActions && (
                 <button
                   type="button"
                   onClick={() => handleProofUploadOpen(editingPayment)}
-                  className="text-sm font-medium text-zinc-600 underline-offset-2 hover:underline dark:text-zinc-400"
-                  aria-label="Reemplazar comprobante"
+                  className="text-sm font-medium text-emerald-600 underline-offset-2 hover:underline dark:text-emerald-400"
+                  aria-label="Subir comprobante"
                 >
-                  Reemplazar
+                  Subir comprobante
                 </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => handleProofUploadOpen(editingPayment)}
-                className="text-sm font-medium text-emerald-600 underline-offset-2 hover:underline dark:text-emerald-400"
-                aria-label="Subir comprobante"
-              >
-                Subir comprobante
-              </button>
+              )
             )}
           </div>
         )}
@@ -1005,25 +1027,29 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
                         >
                           Ver comprobante
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => handleProofRemove(payment)}
-                          disabled={proofRemovingId === payment.id}
-                          className="text-sm font-medium text-red-600 underline-offset-2 hover:underline disabled:opacity-50 dark:text-red-400"
-                          aria-label="Quitar comprobante de pago"
-                        >
-                          {proofRemovingId === payment.id ? "Quitando…" : "Quitar comprobante"}
-                        </button>
+                        {canSeeProofActions && (
+                          <button
+                            type="button"
+                            onClick={() => handleProofRemove(payment)}
+                            disabled={proofRemovingId === payment.id}
+                            className="text-sm font-medium text-red-600 underline-offset-2 hover:underline disabled:opacity-50 dark:text-red-400"
+                            aria-label="Quitar comprobante de pago"
+                          >
+                            {proofRemovingId === payment.id ? "Quitando…" : "Quitar comprobante"}
+                          </button>
+                        )}
                       </>
                     ) : (
-                      <button
-                        type="button"
-                        onClick={() => handleProofUploadOpen(payment)}
-                        className="text-sm font-medium text-zinc-700 underline-offset-2 hover:underline dark:text-zinc-300"
-                        aria-label="Subir comprobante de pago"
-                      >
-                        Subir comprobante
-                      </button>
+                      canSeeProofActions && (
+                        <button
+                          type="button"
+                          onClick={() => handleProofUploadOpen(payment)}
+                          className="text-sm font-medium text-zinc-700 underline-offset-2 hover:underline dark:text-zinc-300"
+                          aria-label="Subir comprobante de pago"
+                        >
+                          Subir comprobante
+                        </button>
+                      )
                     )}
                   </div>
                 </li>
@@ -1134,25 +1160,29 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
                               >
                                 Ver comprobante
                               </button>
-                              <button
-                                type="button"
-                                onClick={() => handleProofRemove(payment)}
-                                disabled={proofRemovingId === payment.id}
-                                className="font-medium text-red-600 underline-offset-2 hover:underline disabled:opacity-50 dark:text-red-400"
-                                aria-label="Quitar comprobante de pago"
-                              >
-                                {proofRemovingId === payment.id ? "Quitando…" : "Quitar comprobante"}
-                              </button>
+                              {canSeeProofActions && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleProofRemove(payment)}
+                                  disabled={proofRemovingId === payment.id}
+                                  className="font-medium text-red-600 underline-offset-2 hover:underline disabled:opacity-50 dark:text-red-400"
+                                  aria-label="Quitar comprobante de pago"
+                                >
+                                  {proofRemovingId === payment.id ? "Quitando…" : "Quitar comprobante"}
+                                </button>
+                              )}
                             </>
                           ) : (
-                            <button
-                              type="button"
-                              onClick={() => handleProofUploadOpen(payment)}
-                              className="font-medium text-zinc-700 underline-offset-2 hover:underline dark:text-zinc-300"
-                              aria-label="Subir comprobante de pago"
-                            >
-                              Subir comprobante
-                            </button>
+                            canSeeProofActions && (
+                              <button
+                                type="button"
+                                onClick={() => handleProofUploadOpen(payment)}
+                                className="font-medium text-zinc-700 underline-offset-2 hover:underline dark:text-zinc-300"
+                                aria-label="Subir comprobante de pago"
+                              >
+                                Subir comprobante
+                              </button>
+                            )
                           )}
                         </div>
                       </td>
