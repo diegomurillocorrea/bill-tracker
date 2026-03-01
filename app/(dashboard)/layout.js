@@ -6,6 +6,41 @@ import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useBreakpoint } from "@/hooks/use-breakpoint";
 
+function useUser() {
+  const [user, setUser] = useState(null);
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user: u } }) => setUser(u ?? null));
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+  return user;
+}
+
+function displayName(user) {
+  if (!user) return null;
+  const meta = user.user_metadata ?? {};
+  return meta.full_name ?? meta.name ?? user.email ?? "Usuario";
+}
+
+function UserDisplay() {
+  const user = useUser();
+  const name = displayName(user);
+  if (!name) return null;
+  return (
+    <div
+      className="rounded-xl px-4 py-2 text-sm text-zinc-500 dark:text-zinc-400"
+      aria-label={`Conectado como ${name}`}
+    >
+      <span className="truncate block">{name}</span>
+    </div>
+  );
+}
+
 const NAV_ITEMS = [
   { href: "/payments", label: "Pagos" },
   { href: "/clients", label: "Clientes" },
@@ -51,6 +86,7 @@ function NavContent({ pathname, onNavClick, hideLogo, hideThemeToggle }) {
       </nav>
       <div className="border-t border-zinc-200/80 p-3 dark:border-zinc-800">
         <div className="flex flex-col gap-2">
+          <UserDisplay />
           {!hideThemeToggle && <ThemeToggle />}
           <SignOutButton />
         </div>
