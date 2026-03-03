@@ -13,14 +13,15 @@ export const BREAKPOINTS = {
 /**
  * Returns current viewport breakpoint: "mobile" | "tablet" | "desktop".
  * Mobile: 0–768px, Tablet: 769–1280px, Desktop: 1281px+.
+ * Defaults to "mobile" so SSR and first paint show the mobile layout (avoids table truncation on small screens).
  * @returns {"mobile" | "tablet" | "desktop"}
  */
 export function useBreakpoint() {
-  const [breakpoint, setBreakpoint] = useState("desktop");
+  const [breakpoint, setBreakpoint] = useState("mobile");
 
   useEffect(() => {
     const getBreakpoint = () => {
-      const w = typeof window === "undefined" ? 1281 : window.innerWidth;
+      const w = typeof window === "undefined" ? 0 : window.innerWidth;
       if (w <= BREAKPOINTS.MOBILE_MAX) return "mobile";
       if (w <= BREAKPOINTS.TABLET_MAX) return "tablet";
       return "desktop";
