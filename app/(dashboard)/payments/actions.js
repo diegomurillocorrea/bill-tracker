@@ -55,7 +55,7 @@ export async function searchReceiptsForPaymentAction(query) {
 }
 
 /**
- * @param {{ receipt_id: string; total_amount: number; payment_method_id: string; status?: number }} payload
+ * @param {{ receipt_id: string; total_amount: number; payment_method_id: string; status?: number; created_at?: string }} payload
  * @returns {Promise<{ error: string | null }>}
  */
 export async function createPaymentAction(payload) {
@@ -64,6 +64,7 @@ export async function createPaymentAction(payload) {
   const payment_method_id = payload.payment_method_id?.trim();
   const status =
     payload.status === PAYMENT_STATUS_PAID ? PAYMENT_STATUS_PAID : PAYMENT_STATUS_PENDING;
+  const created_at = payload.created_at?.trim() || null;
 
   if (!receipt_id) {
     return { error: "El recibo es requerido." };
@@ -77,13 +78,18 @@ export async function createPaymentAction(payload) {
     return { error: "El método de pago es requerido." };
   }
 
-  const supabase = await createClient();
-  const { error } = await supabase.from("payments").insert({
+  const insertPayload = {
     receipt_id,
     total_amount,
     payment_method_id,
     status,
-  });
+  };
+  if (created_at) {
+    insertPayload.created_at = created_at;
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("payments").insert(insertPayload);
 
   if (error) {
     return { error: error.message };
@@ -96,7 +102,7 @@ export async function createPaymentAction(payload) {
 
 /**
  * @param {string} id
- * @param {{ receipt_id: string; total_amount: number; payment_method_id: string; status?: number }} payload
+ * @param {{ receipt_id: string; total_amount: number; payment_method_id: string; status?: number; created_at?: string }} payload
  * @returns {Promise<{ error: string | null }>}
  */
 export async function updatePaymentAction(id, payload) {
@@ -109,6 +115,7 @@ export async function updatePaymentAction(id, payload) {
   const payment_method_id = payload.payment_method_id?.trim();
   const status =
     payload.status === PAYMENT_STATUS_PAID ? PAYMENT_STATUS_PAID : PAYMENT_STATUS_PENDING;
+  const created_at = payload.created_at?.trim() || null;
 
   if (!receipt_id) {
     return { error: "El recibo es requerido." };
@@ -122,15 +129,20 @@ export async function updatePaymentAction(id, payload) {
     return { error: "El método de pago es requerido." };
   }
 
+  const updatePayload = {
+    receipt_id,
+    total_amount,
+    payment_method_id,
+    status,
+  };
+  if (created_at) {
+    updatePayload.created_at = created_at;
+  }
+
   const supabase = await createClient();
   const { error } = await supabase
     .from("payments")
-    .update({
-      receipt_id,
-      total_amount,
-      payment_method_id,
-      status,
-    })
+    .update(updatePayload)
     .eq("id", id);
 
   if (error) {

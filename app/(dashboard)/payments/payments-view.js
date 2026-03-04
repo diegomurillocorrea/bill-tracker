@@ -167,6 +167,10 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("");
   const [selectedStatus, setSelectedStatus] = useState(PAYMENT_STATUS_PENDING);
   const [amount, setAmount] = useState("");
+  const [createdAt, setCreatedAt] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  });
   const [formError, setFormError] = useState(null);
   const [proofUploadingId, setProofUploadingId] = useState(null);
   const [proofRemovingId, setProofRemovingId] = useState(null);
@@ -260,6 +264,12 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
     setSearchResults([]);
   }, []);
 
+  const formatCreatedAtForInput = useCallback((isoString) => {
+    if (!isoString) return "";
+    const d = new Date(isoString);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }, []);
+
   const handleEditPayment = useCallback((payment) => {
     const receipt = payment.receipt ?? payment.receipts;
     setEditingPayment(payment);
@@ -269,8 +279,12 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
     setSelectedStatus(
       payment.status === PAYMENT_STATUS_PAID ? PAYMENT_STATUS_PAID : PAYMENT_STATUS_PENDING
     );
+    setCreatedAt(formatCreatedAtForInput(payment.created_at) || (() => {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}T${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+    })());
     setFormError(null);
-  }, []);
+  }, [formatCreatedAtForInput]);
 
   const handleCancelEdit = useCallback(() => {
     setEditingPayment(null);
@@ -278,6 +292,8 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
     setAmount("");
     setSelectedPaymentMethod("");
     setSelectedStatus(PAYMENT_STATUS_PENDING);
+    const d = new Date();
+    setCreatedAt(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
     setFormError(null);
   }, []);
 
@@ -474,6 +490,10 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
     }
     setIsSubmitting(true);
     
+    const created_at_iso = createdAt
+      ? new Date(createdAt + "T12:00:00").toISOString()
+      : null;
+
     let result;
     if (editingPayment) {
       result = await updatePaymentAction(editingPayment.id, {
@@ -481,6 +501,7 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
         total_amount,
         payment_method_id: selectedPaymentMethod,
         status: selectedStatus,
+        created_at: created_at_iso,
       });
     } else {
       result = await createPaymentAction({
@@ -488,6 +509,7 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
         total_amount,
         payment_method_id: selectedPaymentMethod,
         status: selectedStatus,
+        created_at: created_at_iso,
       });
     }
     
@@ -501,6 +523,8 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
     setAmount("");
     setSelectedPaymentMethod("");
     setSelectedStatus(PAYMENT_STATUS_PENDING);
+    const d = new Date();
+    setCreatedAt(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
     router.refresh();
   };
 
@@ -528,8 +552,8 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
       )}
 
       <section className="rounded-2xl border border-zinc-200/80 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 tablet:p-8">
-        <div className="flex flex-col gap-4 tablet:flex-row tablet:items-center tablet:justify-between">
-          <div ref={filterDropdownRef} className="relative z-10 flex-1 tablet:max-w-xs">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:gap-4">
+          <div ref={filterDropdownRef} className="relative z-10 xl:w-40">
             <button
               type="button"
               onClick={() => setFilterDropdownOpen(!filterDropdownOpen)}
@@ -621,7 +645,7 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
             )}
           </div>
 
-          <div className="relative flex-1 tablet:max-w-sm">
+          <div className="relative xl:w-48">
             <input
               ref={dateInputRef}
               type="date"
@@ -713,9 +737,11 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
         </div>
         <form
           onSubmit={handleSubmit}
-          className="flex flex-col gap-4 tablet:flex-row tablet:items-end tablet:gap-4"
+          className="flex flex-col gap-4"
         >
-          <div ref={comboboxRef} className="relative min-w-0 flex-1">
+          {/* Fila 1: Recibo · Método de pago · Fecha */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div ref={comboboxRef} className="relative min-w-0">
             <label
               htmlFor="payment-receipt-search"
               className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
@@ -794,7 +820,7 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
               </>
             )}
           </div>
-          <div className="w-full tablet:w-56">
+          <div className="w-full">
             <label
               htmlFor="payment-method"
               className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
@@ -818,8 +844,28 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
               ))}
             </select>
           </div>
+          <div className="w-full">
+            <label
+              htmlFor="payment-created-at"
+              className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
+            >
+              Fecha
+            </label>
+            <input
+              id="payment-created-at"
+              type="date"
+              value={createdAt}
+              onChange={(e) => setCreatedAt(e.target.value)}
+              disabled={isSubmitting}
+              className={inputClass}
+              aria-label="Fecha del pago"
+            />
+          </div>
+          </div>
+          {/* Fila 2: Estado · Monto */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {canSeeEstado && (
-            <div className="w-full tablet:w-40">
+            <div className="w-full">
               <label
                 htmlFor="payment-status"
                 className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
@@ -839,7 +885,7 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
               </select>
             </div>
           )}
-          <div className="w-full tablet:w-40">
+          <div className="w-full">
             <label
               htmlFor="payment-amount"
               className="mb-1 block text-sm font-medium text-zinc-700 dark:text-zinc-300"
@@ -860,10 +906,11 @@ export function PaymentsView({ initialPayments, initialPaymentMethods, fetchErro
               aria-invalid={!!formError}
             />
           </div>
+          </div>
           <button
             type="submit"
             disabled={isSubmitting || !selectedReceipt}
-            className="h-12 shrink-0 rounded-xl bg-emerald-600 px-5 text-sm font-medium text-white transition-all hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:focus:ring-offset-zinc-900"
+            className="h-12 w-full rounded-xl bg-emerald-600 px-5 text-sm font-medium text-white transition-all hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 dark:bg-emerald-500 dark:hover:bg-emerald-600 dark:focus:ring-offset-zinc-900"
             aria-busy={isSubmitting}
             aria-label={editingPayment ? "Guardar cambios" : "Registrar pago"}
           >
