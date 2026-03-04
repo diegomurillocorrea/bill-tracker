@@ -214,7 +214,7 @@ export default function DashboardLayout({ children }) {
   const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-zinc-50 dark:bg-zinc-950">
+    <div className="flex h-screen items-start overflow-hidden bg-zinc-50 dark:bg-zinc-950">
       {/* Mobile: top bar with menu button */}
       {isMobile && (
         <header
@@ -269,7 +269,7 @@ export default function DashboardLayout({ children }) {
       {/* Sidebar: drawer on mobile (slide-in), sidebar on tablet/desktop */}
       <aside
         className={`
-          flex w-64 flex-col border-r border-zinc-200/80 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none
+          flex h-full w-64 flex-col border-r border-zinc-200/80 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-none
           tablet:relative tablet:flex tablet:shadow-lg
           ${isMobile ? "fixed inset-y-0 left-0 z-50 flex transform transition-transform duration-300 ease-out" : ""}
           ${isMobile && !mobileMenuOpen ? "-translate-x-full" : ""}
@@ -314,7 +314,7 @@ export default function DashboardLayout({ children }) {
       </aside>
 
       {/* Main content: only this area scrolls; sidebar stays fixed */}
-      <main className="min-h-0 flex-1 flex-col overflow-y-auto tablet:min-w-0">
+      <main className="min-h-0 max-h-screen flex-1 flex-col overflow-y-auto tablet:min-w-0">
         <div
           className={`w-full p-4 tablet:p-6 desktop:p-8 ${isMobile ? "pt-20" : ""} ${isTablet ? "pt-10" : ""}`}
         >
